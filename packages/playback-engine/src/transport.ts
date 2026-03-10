@@ -2,7 +2,7 @@
 // Transport — top-level orchestrator for playback
 // ────────────────────────────────────────────
 
-import type { SoundtrackPack, RuntimeMusicState } from "@soundweave/schema";
+import type { SoundtrackPack, RuntimeMusicState, Cue, PerformanceCaptureEvent, PerformanceCapture } from "@soundweave/schema";
 import type {
   TransportState,
   PlaybackSnapshot,
@@ -24,6 +24,7 @@ import { TransitionPlayer, type TransitionOptions } from "./transition-player.js
 import { SequencePlayer } from "./sequence-player.js";
 import { Mixer } from "./mixer.js";
 import { CueRenderer, encodeWav } from "./renderer.js";
+import { CuePlayer, type CuePlaybackState } from "./cue-player.js";
 
 /**
  * Top-level playback transport.
@@ -39,6 +40,7 @@ export class Transport {
   private sequencePlayer: SequencePlayer | null = null;
   private mixer: Mixer | null = null;
   private renderer: CueRenderer | null = null;
+  private cuePlayer: CuePlayer | null = null;
   private state: TransportState = "stopped";
   private listeners = new Set<PlaybackListener>();
   private errorMessage: string | null = null;
@@ -68,12 +70,18 @@ export class Transport {
 
       this.renderer = new CueRenderer(this.ctx, this.loader);
 
+      this.cuePlayer = new CuePlayer(
+        this.scenePlayer,
+        this.transitionPlayer,
+      );
+
       // Wire internal events to transport listeners
       const relay = (evt: PlaybackEvent) => this.emit(evt.type, evt.detail);
       this.loader.setListener(relay);
       this.scenePlayer.setListener(relay);
       this.transitionPlayer.setListener(relay);
       this.sequencePlayer.setListener(relay);
+      this.cuePlayer.setListener(relay);
     }
 
     // Resume if suspended (browser autoplay policy)
@@ -133,8 +141,85 @@ export class Transport {
   /** Stop all playback */
   stop(): void {
     this.sequencePlayer?.stop();
+    this.cuePlayer?.stop();
     this.scenePlayer?.stopAll();
     this.setState("stopped");
+  }
+
+  // ── Cue playback ──
+
+  /** Play a cue from the beginning or a specific section */
+  async playCue(
+    pack: SoundtrackPack,
+    cue: Cue,
+    startSectionIndex?: number,
+  ): Promise<void> {
+    try {
+      this.ensureContext();
+      this.setState("playing");
+      await this.cuePlayer!.playCue(pack, cue, startSectionIndex);
+      this.setState("stopped");
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  /** Jump to a specific section in a cue */
+  async jumpToSection(
+    pack: SoundtrackPack,
+    cue: Cue,
+    sectionIndex: number,
+  ): Promise<void> {
+    try {
+      this.ensureContext();
+      this.setState("playing");
+      await this.cuePlayer!.jumpToSection(pack, cue, sectionIndex);
+      this.setState("stopped");
+    } catch (err) {
+      this.handleError(err);
+    }
+  }
+
+  /** Toggle section looping */
+  setLoopSection(sectionIndex: number | null): void {
+    this.cuePlayer?.setLoopSection(sectionIndex);
+  }
+
+  /** Get cue playback state */
+  getCueState(): CuePlaybackState {
+    return (
+      this.cuePlayer?.state ?? {
+        playing: false,
+        currentSectionIndex: -1,
+        totalSections: 0,
+        currentBar: 0,
+        totalBars: 0,
+        elapsedSeconds: 0,
+        totalSeconds: 0,
+        loopingSectionIndex: null,
+        recording: false,
+      }
+    );
+  }
+
+  /** Start recording performance capture */
+  startCapture(): void {
+    this.cuePlayer?.startCapture();
+  }
+
+  /** Record a capture event */
+  recordCaptureEvent(event: PerformanceCaptureEvent): void {
+    this.cuePlayer?.recordEvent(event);
+  }
+
+  /** Stop recording and return the capture */
+  stopCapture(name: string): PerformanceCapture | null {
+    return this.cuePlayer?.stopCapture(name) ?? null;
+  }
+
+  /** Get current capture events */
+  getCaptureEvents(): readonly PerformanceCaptureEvent[] {
+    return this.cuePlayer?.getCaptureEvents() ?? [];
   }
 
   /** Mute a stem */
@@ -262,6 +347,7 @@ export class Transport {
     this.scenePlayer = null;
     this.transitionPlayer = null;
     this.sequencePlayer = null;
+    this.cuePlayer = null;
     this.mixer = null;
     this.renderer = null;
     this.listeners.clear();

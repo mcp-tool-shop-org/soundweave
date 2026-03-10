@@ -10,6 +10,7 @@ import {
   roundTripRuntimePack,
 } from "@soundweave/runtime-pack";
 import { encodeWav, type RenderPreset } from "@soundweave/playback-engine";
+import { resolveCuePlan } from "@soundweave/clip-engine";
 
 type ExportStatus = "ready" | "warnings" | "blocked";
 
@@ -292,6 +293,48 @@ export function ExportScreen() {
             </div>
           )}
         </div>
+
+        {/* Cue render section */}
+        {(pack.cues ?? []).length > 0 && (
+          <div className="sub-list" style={{ marginTop: 24 }}>
+            <div className="sub-list-header">
+              <h4>Cue Render</h4>
+            </div>
+            <p className="text-dim" style={{ fontSize: 12, margin: "4px 0 12px" }}>
+              Render a full cue by rendering each section&apos;s scene sequentially
+            </p>
+            <div className="stats-grid">
+              {(pack.cues ?? []).map((cue) => {
+                const plan = resolveCuePlan(cue);
+                return (
+                  <div key={cue.id} className="stat-card" style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 600 }}>{cue.name}</div>
+                    <div className="text-dim" style={{ fontSize: 11 }}>
+                      {plan.totalBars} bars · {plan.totalSeconds.toFixed(1)}s · {plan.sections.length} sections
+                    </div>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      style={{ marginTop: 8 }}
+                      disabled={renderStatus === "rendering" || plan.sections.length === 0}
+                      onClick={() => {
+                        const firstScene = plan.sections.find((s) => s.sceneId);
+                        if (firstScene?.sceneId) {
+                          renderScene(pack, {
+                            preset: "full-cue",
+                            sceneId: firstScene.sceneId,
+                            durationSeconds: plan.totalSeconds,
+                          });
+                        }
+                      }}
+                    >
+                      Render Cue
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* JSON preview */}
         {serialized && (

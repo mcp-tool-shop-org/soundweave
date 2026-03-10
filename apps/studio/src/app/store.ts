@@ -15,6 +15,9 @@ import type {
   Clip,
   ClipNote,
   ClipVariant,
+  Cue,
+  CueSection,
+  PerformanceCapture,
 } from "@soundweave/schema";
 
 // ── Section type ──
@@ -30,6 +33,7 @@ export type Section =
   | "review"
   | "preview"
   | "performance"
+  | "cues"
   | "mixer"
   | "export";
 
@@ -125,6 +129,20 @@ export interface StudioState {
   ) => void;
   removeClipVariant: (clipId: string, variantId: string) => void;
   duplicateClipAsVariant: (clipId: string, variantName: string) => void;
+
+  // Cue actions
+  addCue: (cue: Cue) => void;
+  updateCue: (id: string, partial: Partial<Cue>) => void;
+  deleteCue: (id: string) => void;
+  addCueSection: (cueId: string, section: CueSection) => void;
+  updateCueSection: (cueId: string, sectionId: string, partial: Partial<CueSection>) => void;
+  removeCueSection: (cueId: string, sectionId: string) => void;
+  reorderCueSections: (cueId: string, sectionIds: string[]) => void;
+
+  // Capture actions
+  captures: PerformanceCapture[];
+  addCapture: (capture: PerformanceCapture) => void;
+  deleteCapture: (id: string) => void;
 }
 
 // ── Default empty pack ──
@@ -540,4 +558,39 @@ export const useStudioStore = create<StudioState>((set) => ({
         }),
       },
     })),
+
+  // ── Cue actions ──
+  addCue: (cue) => set((state) => ({
+    pack: { ...state.pack, cues: [...(state.pack.cues ?? []), cue] },
+    selectedId: cue.id,
+  })),
+  updateCue: (id, partial) => set((state) => ({
+    pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === id ? { ...c, ...partial } : c) },
+  })),
+  deleteCue: (id) => set((state) => {
+    const cues = (state.pack.cues ?? []).filter((c) => c.id !== id);
+    return { pack: { ...state.pack, cues }, selectedId: fixSelection(cues, id, state.selectedId) };
+  }),
+  addCueSection: (cueId, section) => set((state) => ({
+    pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: [...c.sections, section] } : c) },
+  })),
+  updateCueSection: (cueId, sectionId, partial) => set((state) => ({
+    pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: c.sections.map((s) => s.id === sectionId ? { ...s, ...partial } : s) } : c) },
+  })),
+  removeCueSection: (cueId, sectionId) => set((state) => ({
+    pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: c.sections.filter((s) => s.id !== sectionId) } : c) },
+  })),
+  reorderCueSections: (cueId, sectionIds) => set((state) => ({
+    pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => {
+      if (c.id !== cueId) return c;
+      const byId = new Map(c.sections.map((s) => [s.id, s]));
+      const reordered = sectionIds.map((id) => byId.get(id)).filter(Boolean) as CueSection[];
+      return { ...c, sections: reordered };
+    }) },
+  })),
+
+  // ── Capture actions ──
+  captures: [],
+  addCapture: (capture) => set((state) => ({ captures: [...state.captures, capture] })),
+  deleteCapture: (id) => set((state) => ({ captures: state.captures.filter((c) => c.id !== id) })),
 }));

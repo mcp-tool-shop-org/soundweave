@@ -233,6 +233,90 @@ export interface SoundtrackPack {
   instruments?: InstrumentPreset[];
   /** Composed clips */
   clips?: Clip[];
+  /** Named cue structures */
+  cues?: Cue[];
+}
+
+// ── Cue structures ──
+
+export type CueSectionRole = "intro" | "body" | "escalation" | "climax" | "outro" | "transition";
+
+export interface CueSection {
+  id: string;
+  name: string;
+  role: CueSectionRole;
+  /** Duration in bars */
+  durationBars: number;
+  /** Scene to activate during this section */
+  sceneId?: string;
+  /** Override clips for this section */
+  clipIds?: string[];
+  /** Intensity target for this section */
+  intensity?: IntensityLevel;
+  /** Transition mode entering this section */
+  transitionMode?: TransitionMode;
+  /** Optional variant IDs to prefer in this section */
+  variantIds?: string[];
+  /** Free-form notes */
+  notes?: string;
+}
+
+export interface Cue {
+  id: string;
+  name: string;
+  /** Default tempo for this cue */
+  bpm?: number;
+  /** Default key context */
+  keyRoot?: number;
+  keyScale?: string;
+  /** Time signature (beats per bar, default 4) */
+  beatsPerBar?: number;
+  /** Ordered sections */
+  sections: CueSection[];
+  tags?: string[];
+  notes?: string;
+}
+
+// ── Performance capture ──
+
+export type CaptureActionType =
+  | "scene-launch"
+  | "clip-launch"
+  | "intensity-change"
+  | "section-advance"
+  | "stop";
+
+export interface PerformanceCaptureEvent {
+  /** Timestamp in ticks from cue start */
+  tick: number;
+  /** Bar number (derived from tick + bpm + beatsPerBar) */
+  bar: number;
+  /** Beat within the bar */
+  beat: number;
+  /** What happened */
+  action: CaptureActionType;
+  /** Target scene ID (for scene-launch) */
+  sceneId?: string;
+  /** Target clip ID (for clip-launch) */
+  clipId?: string;
+  /** Intensity level (for intensity-change) */
+  intensity?: IntensityLevel;
+  /** Quantization that was applied */
+  quantize?: QuantizeMode;
+}
+
+export interface PerformanceCapture {
+  id: string;
+  name: string;
+  /** Cue this was captured against (optional) */
+  cueId?: string;
+  bpm: number;
+  beatsPerBar: number;
+  /** Total duration in bars */
+  totalBars: number;
+  events: PerformanceCaptureEvent[];
+  /** When captured */
+  createdAt: string;
 }
 
 // ── Runtime state ──

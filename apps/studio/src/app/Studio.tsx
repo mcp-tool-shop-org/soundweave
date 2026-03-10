@@ -14,6 +14,7 @@ import {
   ReviewScreen,
   PreviewScreen,
   PerformanceScreen,
+  CuesScreen,
   MixerScreen,
   ExportScreen,
 } from "./screens";
@@ -42,6 +43,8 @@ function ScreenRouter() {
       return <PreviewScreen />;
     case "performance":
       return <PerformanceScreen />;
+    case "cues":
+      return <CuesScreen />;
     case "mixer":
       return <MixerScreen />;
     case "export":

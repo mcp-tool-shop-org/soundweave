@@ -40,3 +40,22 @@ export {
   diatonicChords,
   progressionFromDegrees,
 } from "./clip-transforms.js";
+
+// Cue scheduling & performance capture
+export {
+  resolveCuePlan,
+  sectionAtTick,
+  sectionAtBar,
+  cueSecondsToTick,
+  cueTickToSeconds,
+  createCaptureEvent,
+  captureToСue,
+  captureTotalBars,
+  quantizeTick,
+  ticksPerBar,
+  ticksToSeconds,
+  secondsToTicks,
+  tickToBar,
+  tickToBeat,
+} from "./cue-scheduler.js";
+export type { ResolvedSection, CuePlaybackPlan } from "./cue-scheduler.js";

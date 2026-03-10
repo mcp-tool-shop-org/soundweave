@@ -43,3 +43,5 @@ export type {
   PlaybackEvent,
   PlaybackListener,
 } from "./types.js";
+export { CuePlayer } from "./cue-player.js";
+export type { CuePlaybackState } from "./cue-player.js";

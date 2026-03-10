@@ -6,6 +6,7 @@ import {
   type TransportState,
   type StemHandle,
   type SequencePlaybackState,
+  type CuePlaybackState,
   type MixerSnapshot,
   type BusId,
   type FxType,
@@ -13,7 +14,7 @@ import {
   type RenderOptions,
   type RenderResult,
 } from "@soundweave/playback-engine";
-import type { SoundtrackPack, RuntimeMusicState } from "@soundweave/schema";
+import type { SoundtrackPack, RuntimeMusicState, Cue, PerformanceCaptureEvent, PerformanceCapture } from "@soundweave/schema";
 
 // ── Singleton transport ──
 
@@ -33,6 +34,7 @@ export interface PlaybackState {
   currentSceneId: string | null;
   stemStates: Map<string, StemHandle>;
   sequenceState: SequencePlaybackState;
+  cueState: CuePlaybackState;
   mixerSnapshot: MixerSnapshot | null;
   renderStatus: "idle" | "rendering" | "done" | "error";
   lastRenderResult: RenderResult | null;
@@ -54,6 +56,14 @@ export interface PlaybackState {
   setMuted: (stemId: string, muted: boolean) => void;
   setSolo: (stemId: string, solo: boolean) => void;
   setGain: (stemId: string, gainDb: number) => void;
+
+  // Cue playback actions
+  playCue: (pack: SoundtrackPack, cue: Cue, startSection?: number) => Promise<void>;
+  jumpToSection: (pack: SoundtrackPack, cue: Cue, sectionIndex: number) => Promise<void>;
+  setLoopSection: (sectionIndex: number | null) => void;
+  startCapture: () => void;
+  recordCaptureEvent: (event: PerformanceCaptureEvent) => void;
+  stopCapture: (name: string) => PerformanceCapture | null;
 
   // Mixer actions
   setPan: (stemId: string, pan: number) => void;
@@ -78,12 +88,14 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
     const t = getTransport();
     const snap = t.getSnapshot();
     const seqState = t.getSequenceState();
+    const cueState = t.getCueState();
     const mixSnap = t.getMixerSnapshot();
     set({
       transportState: snap.transport,
       currentSceneId: snap.currentSceneId,
       stemStates: new Map(snap.stemHandles),
       sequenceState: seqState,
+      cueState,
       mixerSnapshot: mixSnap,
       errorMessage: snap.errorMessage,
     });
@@ -98,6 +110,17 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
     currentSceneId: null,
     stemStates: new Map(),
     sequenceState: { playing: false, currentStepIndex: -1, totalSteps: 0 },
+    cueState: {
+      playing: false,
+      currentSectionIndex: -1,
+      totalSections: 0,
+      currentBar: 0,
+      totalBars: 0,
+      elapsedSeconds: 0,
+      totalSeconds: 0,
+      loopingSectionIndex: null,
+      recording: false,
+    },
     mixerSnapshot: null,
     renderStatus: "idle",
     lastRenderResult: null,
@@ -212,6 +235,43 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
       }
     },
 
+    // Cue playback actions
+    playCue: async (pack, cue, startSection) => {
+      const t = getTransport();
+      await t.playCue(pack, cue, startSection);
+      syncFromTransport();
+    },
+
+    jumpToSection: async (pack, cue, sectionIndex) => {
+      const t = getTransport();
+      await t.jumpToSection(pack, cue, sectionIndex);
+      syncFromTransport();
+    },
+
+    setLoopSection: (sectionIndex) => {
+      const t = getTransport();
+      t.setLoopSection(sectionIndex);
+      syncFromTransport();
+    },
+
+    startCapture: () => {
+      const t = getTransport();
+      t.startCapture();
+      syncFromTransport();
+    },
+
+    recordCaptureEvent: (event) => {
+      const t = getTransport();
+      t.recordCaptureEvent(event);
+    },
+
+    stopCapture: (name) => {
+      const t = getTransport();
+      const capture = t.stopCapture(name);
+      syncFromTransport();
+      return capture;
+    },
+
     dispose: () => {
       const t = getTransport();
       t.dispose();
@@ -221,6 +281,17 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
         currentSceneId: null,
         stemStates: new Map(),
         sequenceState: { playing: false, currentStepIndex: -1, totalSteps: 0 },
+        cueState: {
+          playing: false,
+          currentSectionIndex: -1,
+          totalSections: 0,
+          currentBar: 0,
+          totalBars: 0,
+          elapsedSeconds: 0,
+          totalSeconds: 0,
+          loopingSectionIndex: null,
+          recording: false,
+        },
         mixerSnapshot: null,
         renderStatus: "idle",
         lastRenderResult: null,
