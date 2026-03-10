@@ -6,3 +6,4 @@ export { BindingsScreen } from "./BindingsScreen";
 export { TransitionsScreen } from "./TransitionsScreen";
 export { ReviewScreen } from "./ReviewScreen";
 export { PreviewScreen } from "./PreviewScreen";
+export { ExportScreen } from "./ExportScreen";

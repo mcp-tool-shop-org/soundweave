@@ -1,5 +1,325 @@
 import type { SoundtrackPack } from "@soundweave/schema";
 
+// ── Minimal Pack — smallest valid pack ──
+
+export const minimalPack: SoundtrackPack = {
+  meta: {
+    id: "minimal-pack",
+    name: "Minimal Pack",
+    version: "1.0.0",
+    description: "The smallest valid soundtrack pack — one asset, one stem, one scene.",
+    author: "soundweave",
+    tags: ["minimal", "tutorial"],
+    schemaVersion: "1",
+  },
+  assets: [
+    {
+      id: "asset-drone",
+      name: "Ambient Drone",
+      src: "audio/drone.ogg",
+      kind: "loop",
+      durationMs: 16000,
+      bpm: 60,
+      key: "Cm",
+    },
+  ],
+  stems: [
+    {
+      id: "stem-drone",
+      name: "Drone Layer",
+      assetId: "asset-drone",
+      role: "base",
+      loop: true,
+    },
+  ],
+  scenes: [
+    {
+      id: "scene-ambient",
+      name: "Ambient",
+      category: "exploration",
+      layers: [{ stemId: "stem-drone", required: true }],
+    },
+  ],
+  bindings: [
+    {
+      id: "bind-ambient",
+      name: "Default Ambient",
+      sceneId: "scene-ambient",
+      conditions: [{ field: "mode", op: "eq", value: "exploration" }],
+      priority: 0,
+    },
+  ],
+  transitions: [],
+};
+
+// ── Combat Escalation Pack — combat → boss → victory progression ──
+
+export const combatEscalationPack: SoundtrackPack = {
+  meta: {
+    id: "combat-escalation-pack",
+    name: "Combat Escalation Pack",
+    version: "1.0.0",
+    description:
+      "A multi-phase combat pack: patrol → skirmish → boss → victory with layered stems and transition stingers.",
+    author: "soundweave",
+    tags: ["combat", "boss", "escalation", "rpg"],
+    schemaVersion: "1",
+  },
+  assets: [
+    {
+      id: "asset-patrol-base",
+      name: "Patrol Base",
+      src: "audio/patrol-base.ogg",
+      kind: "loop",
+      durationMs: 16000,
+      bpm: 100,
+      key: "Dm",
+    },
+    {
+      id: "asset-patrol-perc",
+      name: "Patrol Percussion",
+      src: "audio/patrol-perc.ogg",
+      kind: "loop",
+      durationMs: 16000,
+      bpm: 100,
+    },
+    {
+      id: "asset-skirmish-base",
+      name: "Skirmish Base",
+      src: "audio/skirmish-base.ogg",
+      kind: "loop",
+      durationMs: 8000,
+      bpm: 130,
+      key: "Em",
+    },
+    {
+      id: "asset-skirmish-strings",
+      name: "Skirmish Strings",
+      src: "audio/skirmish-strings.ogg",
+      kind: "loop",
+      durationMs: 8000,
+      bpm: 130,
+      key: "Em",
+    },
+    {
+      id: "asset-boss-base",
+      name: "Boss Base",
+      src: "audio/boss-base.ogg",
+      kind: "loop",
+      durationMs: 8000,
+      bpm: 160,
+      key: "Gm",
+    },
+    {
+      id: "asset-boss-choir",
+      name: "Boss Choir",
+      src: "audio/boss-choir.ogg",
+      kind: "loop",
+      durationMs: 8000,
+      bpm: 160,
+      key: "Gm",
+    },
+    {
+      id: "asset-victory-fanfare",
+      name: "Victory Fanfare",
+      src: "audio/victory-fanfare.ogg",
+      kind: "oneshot",
+      durationMs: 5000,
+    },
+    {
+      id: "asset-stinger-engage",
+      name: "Engage Stinger",
+      src: "audio/stinger-engage.ogg",
+      kind: "stinger",
+      durationMs: 1200,
+    },
+    {
+      id: "asset-stinger-boss",
+      name: "Boss Stinger",
+      src: "audio/stinger-boss.ogg",
+      kind: "stinger",
+      durationMs: 2000,
+    },
+  ],
+  stems: [
+    {
+      id: "stem-patrol-base",
+      name: "Patrol Base",
+      assetId: "asset-patrol-base",
+      role: "base",
+      loop: true,
+    },
+    {
+      id: "stem-patrol-perc",
+      name: "Patrol Percussion",
+      assetId: "asset-patrol-perc",
+      role: "accent",
+      loop: true,
+      mutedByDefault: true,
+      gainDb: -2,
+    },
+    {
+      id: "stem-skirmish-base",
+      name: "Skirmish Base",
+      assetId: "asset-skirmish-base",
+      role: "combat",
+      loop: true,
+    },
+    {
+      id: "stem-skirmish-strings",
+      name: "Skirmish Strings",
+      assetId: "asset-skirmish-strings",
+      role: "danger",
+      loop: true,
+      mutedByDefault: true,
+    },
+    {
+      id: "stem-boss-base",
+      name: "Boss Base",
+      assetId: "asset-boss-base",
+      role: "boss",
+      loop: true,
+    },
+    {
+      id: "stem-boss-choir",
+      name: "Boss Choir",
+      assetId: "asset-boss-choir",
+      role: "boss",
+      loop: true,
+      gainDb: -4,
+    },
+    {
+      id: "stem-victory",
+      name: "Victory Fanfare",
+      assetId: "asset-victory-fanfare",
+      role: "recovery",
+      loop: false,
+    },
+  ],
+  scenes: [
+    {
+      id: "scene-patrol",
+      name: "Patrol",
+      category: "exploration",
+      layers: [
+        { stemId: "stem-patrol-base", required: true, startMode: "immediate" },
+        { stemId: "stem-patrol-perc", startMode: "next-bar" },
+      ],
+      fallbackSceneId: "scene-patrol",
+      tags: ["outdoor"],
+    },
+    {
+      id: "scene-skirmish",
+      name: "Skirmish",
+      category: "combat",
+      layers: [
+        { stemId: "stem-skirmish-base", required: true },
+        { stemId: "stem-skirmish-strings" },
+      ],
+      fallbackSceneId: "scene-patrol",
+    },
+    {
+      id: "scene-boss",
+      name: "Boss Fight",
+      category: "boss",
+      layers: [
+        { stemId: "stem-boss-base", required: true },
+        { stemId: "stem-boss-choir" },
+      ],
+      fallbackSceneId: "scene-skirmish",
+    },
+    {
+      id: "scene-victory",
+      name: "Victory",
+      category: "victory",
+      layers: [{ stemId: "stem-victory", required: true }],
+      fallbackSceneId: "scene-patrol",
+    },
+  ],
+  bindings: [
+    {
+      id: "bind-patrol",
+      name: "Patrol Mode",
+      sceneId: "scene-patrol",
+      conditions: [{ field: "inCombat", op: "eq", value: false }],
+      priority: 0,
+    },
+    {
+      id: "bind-skirmish",
+      name: "Skirmish Engaged",
+      sceneId: "scene-skirmish",
+      conditions: [
+        { field: "inCombat", op: "eq", value: true },
+        { field: "boss", op: "eq", value: false },
+      ],
+      priority: 10,
+    },
+    {
+      id: "bind-boss",
+      name: "Boss Encounter",
+      sceneId: "scene-boss",
+      conditions: [
+        { field: "inCombat", op: "eq", value: true },
+        { field: "boss", op: "eq", value: true },
+      ],
+      priority: 20,
+    },
+    {
+      id: "bind-victory",
+      name: "Victory Event",
+      sceneId: "scene-victory",
+      conditions: [{ field: "victory", op: "eq", value: true }],
+      priority: 30,
+      stopProcessing: true,
+    },
+  ],
+  transitions: [
+    {
+      id: "trans-patrol-to-skirmish",
+      name: "Patrol → Skirmish",
+      fromSceneId: "scene-patrol",
+      toSceneId: "scene-skirmish",
+      mode: "stinger-then-switch",
+      stingerAssetId: "asset-stinger-engage",
+      durationMs: 1200,
+    },
+    {
+      id: "trans-skirmish-to-boss",
+      name: "Skirmish → Boss",
+      fromSceneId: "scene-skirmish",
+      toSceneId: "scene-boss",
+      mode: "stinger-then-switch",
+      stingerAssetId: "asset-stinger-boss",
+      durationMs: 2000,
+    },
+    {
+      id: "trans-boss-to-victory",
+      name: "Boss → Victory",
+      fromSceneId: "scene-boss",
+      toSceneId: "scene-victory",
+      mode: "immediate",
+    },
+    {
+      id: "trans-victory-to-patrol",
+      name: "Victory → Patrol",
+      fromSceneId: "scene-victory",
+      toSceneId: "scene-patrol",
+      mode: "crossfade",
+      durationMs: 3000,
+    },
+    {
+      id: "trans-skirmish-to-patrol",
+      name: "Skirmish → Patrol (disengage)",
+      fromSceneId: "scene-skirmish",
+      toSceneId: "scene-patrol",
+      mode: "crossfade",
+      durationMs: 2000,
+    },
+  ],
+};
+
+// ── Starter Adventure Pack ──
+
 export const starterPack: SoundtrackPack = {
   meta: {
     id: "starter-pack",
@@ -254,3 +574,11 @@ export const starterPack: SoundtrackPack = {
     },
   ],
 };
+
+// ── Example pack registry ──
+
+export const examplePacks = [
+  { id: "minimal-pack", name: "Minimal Pack", pack: minimalPack },
+  { id: "starter-pack", name: "Starter Adventure Pack", pack: starterPack },
+  { id: "combat-escalation-pack", name: "Combat Escalation Pack", pack: combatEscalationPack },
+] as const;

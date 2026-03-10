@@ -23,7 +23,8 @@ export type Section =
   | "bindings"
   | "transitions"
   | "review"
-  | "preview";
+  | "preview"
+  | "export";
 
 // ── Store shape ──
 

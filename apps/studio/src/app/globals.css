@@ -870,3 +870,153 @@ textarea.field-input {
 .trace-col-stems .result-list {
   gap: 2px;
 }
+
+/* ── Pack switcher (nav rail) ── */
+.nav-pack-switcher {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.nav-pack-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.nav-pack-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-input);
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.nav-pack-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Export screen ── */
+.export-readiness {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.export-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.export-status-badge.ready {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.export-status-badge.warnings {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.export-status-badge.blocked {
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.export-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.export-roundtrip-ok {
+  font-size: 12px;
+  color: #34d399;
+  font-style: italic;
+}
+
+.export-summary {
+  margin-bottom: 20px;
+}
+
+.export-summary h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 12px;
+}
+
+.export-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.export-findings {
+  margin-bottom: 20px;
+}
+
+.export-findings h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+
+.export-findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.export-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.export-preview {
+  margin-top: 8px;
+}
+
+.export-preview h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 8px;
+}
+
+.export-json {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  max-height: 480px;
+  overflow: auto;
+  white-space: pre;
+  tab-size: 2;
+}
