@@ -36,4 +36,10 @@ export const FIXTURES = {
   RESOLUTION_INCLUDES: "resolution-includes-pack.json",
   RESOLUTION_MISSING_SCENE_WINNER: "resolution-missing-scene-winner.json",
   RESOLUTION_NUMERIC_OPS: "resolution-numeric-ops-pack.json",
+  SIMULATION_BASIC: "simulation-basic-pack.json",
+  SIMULATION_COMBAT_ESCALATION: "simulation-combat-escalation-pack.json",
+  SIMULATION_MISSING_TRANSITION: "simulation-missing-transition-pack.json",
+  SIMULATION_MISSING_STEM: "simulation-missing-stem-pack.json",
+  SIMULATION_BASIC_SEQUENCE: "simulation-basic-sequence.json",
+  SIMULATION_ESCALATION_SEQUENCE: "simulation-escalation-sequence.json",
 } as const;

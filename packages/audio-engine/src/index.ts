@@ -1,2 +1,5 @@
-// @soundweave/audio-engine — playback model, scene switching, transitions, layering
-export const PACKAGE = "@soundweave/audio-engine" as const;
+// @soundweave/audio-engine — scene-layer resolution, transition lookup, simulation
+export * from "./types.js";
+export { resolveActiveLayers } from "./layers.js";
+export { findTransitionRule } from "./transitions.js";
+export { simulateStateSequence } from "./simulate.js";

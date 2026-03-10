@@ -18,7 +18,12 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@soundweave/test-kit": "workspace:*",
     "typescript": "^5.8.0",
     "vitest": "^3.2.0"
+  },
+  "dependencies": {
+    "@soundweave/schema": "workspace:*",
+    "@soundweave/scene-mapper": "workspace:*"
   }
 }
