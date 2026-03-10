@@ -1,2 +1,5 @@
 // @soundweave/scene-mapper — trigger mapping logic
-export const PACKAGE = "@soundweave/scene-mapper" as const;
+export * from "./types.js";
+export { evaluateCondition } from "./conditions.js";
+export { evaluateBinding } from "./bindings.js";
+export { evaluateBindings, resolveScene } from "./resolve.js";

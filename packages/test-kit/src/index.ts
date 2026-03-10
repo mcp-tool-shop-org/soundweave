@@ -30,4 +30,10 @@ export const FIXTURES = {
   INTEGRITY_DUPLICATE_IDS: "integrity-duplicate-ids.json",
   INTEGRITY_SELF_REFERENCE: "integrity-self-reference-pack.json",
   INTEGRITY_UNUSED_ENTITIES: "integrity-unused-entities.json",
+  RESOLUTION_BASIC: "resolution-basic-pack.json",
+  RESOLUTION_PRIORITY: "resolution-priority-pack.json",
+  RESOLUTION_TIEBREAK: "resolution-tiebreak-pack.json",
+  RESOLUTION_INCLUDES: "resolution-includes-pack.json",
+  RESOLUTION_MISSING_SCENE_WINNER: "resolution-missing-scene-winner.json",
+  RESOLUTION_NUMERIC_OPS: "resolution-numeric-ops-pack.json",
 } as const;
