@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
+  <a href="README.ja.md">日本語</a> | <a href="README.md">English</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
 </p>
 
 <p align="center">
@@ -8,20 +8,20 @@
 
 # @soundweave/music-theory
 
-Music theory primitives and utilities for Soundweave — scales, chords, motifs, and intensity transforms.
+Soundweave 音乐理论的基础模块和实用工具，包括音阶、和弦、乐句和强度变换。
 
-## What It Owns
+## 主要功能
 
-- Pitch class and note name operations
-- Scale definitions and pitch class generation
-- Chord quality, voicing, and progression helpers
-- Motif transforms (transpose, invert, reverse, rhythm scale)
-- Variation generation (rhythmic, melodic, thin, densify, accents)
-- Intensity tier derivation (low, mid, high, tension, brighten)
+- 音高和音符名称的操作
+- 音阶定义和音高生成
+- 和弦质量、和弦结构和和弦进行辅助功能
+- 乐句变换（移调、倒置、反转、节奏缩放）
+- 变奏生成（节奏、旋律、稀疏化、密集化、重音）
+- 强度等级推导（低、中、高、张力、明亮）
 
-## Key Exports
+## 主要导出内容
 
-### Scales and Pitch
+### 音阶和音高
 
 ```ts
 import {
@@ -31,7 +31,7 @@ import {
 } from "@soundweave/music-theory";
 ```
 
-### Chords
+### 和弦
 
 ```ts
 import {
@@ -41,7 +41,7 @@ import {
 } from "@soundweave/music-theory";
 ```
 
-### Motif Transforms
+### 乐句变换
 
 ```ts
 import {
@@ -50,7 +50,7 @@ import {
 } from "@soundweave/music-theory";
 ```
 
-### Intensity
+### 强度
 
 ```ts
 import {
@@ -59,6 +59,6 @@ import {
 } from "@soundweave/music-theory";
 ```
 
-## Dependencies
+## 依赖项
 
-None — zero-dependency foundation package.
+无 — 这是一个不依赖任何其他包的基础模块。

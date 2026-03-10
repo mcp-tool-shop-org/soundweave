@@ -14,7 +14,7 @@ export const config: SiteConfig = {
     headlineAccent: 'composition meets adaptation.',
     description: 'A composition-first workstation for authoring adaptive game soundtracks — clips, cues, scenes, layers, automation — with deterministic runtime logic.',
     primaryCta: { href: '#usage', label: 'Get started' },
-    secondaryCta: { href: '#features', label: 'Explore' },
+    secondaryCta: { href: 'handbook/', label: 'Read the Handbook' },
     previews: [
       { label: 'Clone', code: 'git clone https://github.com/mcp-tool-shop-org/soundweave.git' },
       { label: 'Install', code: 'pnpm install && pnpm build' },
