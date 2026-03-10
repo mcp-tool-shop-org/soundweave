@@ -72,7 +72,14 @@ importers:
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)
 
   packages/asset-index:
+    dependencies:
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
     devDependencies:
+      '@soundweave/test-kit':
+        specifier: workspace:*
+        version: link:../test-kit
       typescript:
         specifier: ^5.8.0
         version: 5.9.3

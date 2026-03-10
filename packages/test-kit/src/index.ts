@@ -23,4 +23,11 @@ export const FIXTURES = {
   INVALID_BAD_TRANSITION: "invalid-pack-bad-transition.json",
   INVALID_EMPTY_SCENE_LAYERS: "invalid-pack-empty-scene-layers.json",
   INVALID_BAD_ASSET_DURATION: "invalid-pack-bad-asset-duration.json",
+  INTEGRITY_VALID: "integrity-valid-pack.json",
+  INTEGRITY_MISSING_ASSET_REF: "integrity-missing-asset-ref.json",
+  INTEGRITY_MISSING_STEM_REF: "integrity-missing-stem-ref.json",
+  INTEGRITY_MISSING_SCENE_REF: "integrity-missing-scene-ref.json",
+  INTEGRITY_DUPLICATE_IDS: "integrity-duplicate-ids.json",
+  INTEGRITY_SELF_REFERENCE: "integrity-self-reference-pack.json",
+  INTEGRITY_UNUSED_ENTITIES: "integrity-unused-entities.json",
 } as const;
