@@ -42,4 +42,7 @@ export const FIXTURES = {
   SIMULATION_MISSING_STEM: "simulation-missing-stem-pack.json",
   SIMULATION_BASIC_SEQUENCE: "simulation-basic-sequence.json",
   SIMULATION_ESCALATION_SEQUENCE: "simulation-escalation-sequence.json",
+  REVIEW_MISSING_BASELINE: "review-missing-baseline-pack.json",
+  REVIEW_NO_BINDINGS: "review-no-bindings-pack.json",
+  REVIEW_IMMEDIATE_ONLY: "review-immediate-only-pack.json",
 } as const;
