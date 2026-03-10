@@ -1,97 +1,120 @@
 # Soundweave
 
-Adaptive soundtrack authoring studio for designing, previewing, and exporting trigger-driven music packs for AI RPG worlds.
+Adaptive soundtrack studio for composing, arranging, scoring, mixing, automating, performing, and exporting interactive music for games.
 
-## What it does
+## What It Is
 
-Soundweave lets designers define musical **scenes**, map them to game-state **trigger bindings**, preview adaptive **transitions**, and export structured **runtime packs** consumable by any game engine.
+Soundweave is a composition-first, adaptation-aware workstation. It combines structured music authoring — clips, cues, scenes, layers, automation — with adaptive logic that responds to game state at runtime. The result: game music that feels intentional, not generated.
 
-**The loop:** define assets → wrap them as stems → compose scenes with layered stems → bind scenes to game-state conditions → define transitions between scenes → preview with simulated state → export runtime JSON.
+## What It Is Not
 
-## What it is not
+A DAW. A toy sequencer. An AI music generator. A world-building database with sound attached. Soundweave is a serious creative instrument for adaptive game score authoring.
 
-A DAW. A waveform editor. A synth. A mastering chain. An "AI writes music for you" button.
+## What It Can Do
 
-## Monorepo layout
+- **Compose** — Clips with notes, instruments, scales, chords, motif transforms, intensity variants
+- **Arrange** — Scenes with layered stems, section roles, intensity curves
+- **Score a world** — Motif families, score profiles, cue families, world map entries, derivation
+- **Automate** — Lanes, macros, envelopes, live capture and merge
+- **Recall and reuse** — Templates, snapshots, branches, favorites, collections, compare
+- **Sample workflow** — Import, trim, slice, kit builder, sample instruments
+- **Adaptive logic** — Trigger bindings, transitions, deterministic scene resolution
+- **Validate** — Schema validation, integrity auditing, cross-reference checks
+- **Export** — Runtime packs for game engine consumption
+
+## Monorepo Structure
 
 ### Apps
 
 | App | Description |
 |-----|-------------|
-| `apps/studio` | Browser-based authoring UI (Next.js 15, Zustand, dark theme) |
+| `apps/studio` | Main authoring UI (Next.js 15, Zustand 5) |
 | `apps/docs` | Documentation site (Astro) |
 
-### Packages
+### Core Packages
 
 | Package | Description |
 |---------|-------------|
-| `packages/schema` | Canonical types and Zod validators for all Soundweave data |
-| `packages/asset-index` | Asset reference management and manifest validation |
-| `packages/audio-engine` | Scene evaluation, binding resolution, transition modeling |
-| `packages/scene-mapper` | Trigger mapping logic |
-| `packages/runtime-pack` | Export/import runtime-ready soundtrack packs |
-| `packages/review` | Automated summaries, audits, and pack health checks |
-| `packages/ui` | Shared UI components |
-| `packages/test-kit` | Fixtures, sample packs, and contract tests |
+| `@soundweave/schema` | Canonical types, Zod schemas, parse/validate |
+| `@soundweave/asset-index` | Pack integrity indexing and auditing |
+| `@soundweave/audio-engine` | Sample playback and voice management |
+| `@soundweave/test-kit` | Fixtures and test utilities |
 
-## Quick start
+### Musical and Playback Packages
+
+| Package | Description |
+|---------|-------------|
+| `@soundweave/sample-lab` | Trim, slice, kit, instrument helpers |
+| `@soundweave/score-map` | Motifs, profiles, cue families, derivation |
+| `@soundweave/automation` | Lanes, macros, envelopes, capture |
+| `@soundweave/library` | Templates, snapshots, branches, favorites, compare |
+
+### Infrastructure Packages
+
+| Package | Description |
+|---------|-------------|
+| `@soundweave/scene-mapper` | Trigger mapping logic |
+| `@soundweave/runtime-pack` | Runtime export/import |
+| `@soundweave/review` | Summaries and audit helpers |
+| `@soundweave/ui` | Shared UI components |
+
+## Studio Screens
+
+| Screen | What it does |
+|--------|-------------|
+| Overview | Pack metadata, entity counts, audit summary |
+| Assets | Browse, filter, and manage audio assets |
+| Stems | Create and edit stems bound to assets |
+| Scenes | Build scenes from stem layers |
+| Bindings | Map runtime state to scenes with priority |
+| Transitions | Define scene-to-scene transition behavior |
+| Clips | Compose clips with notes, instruments, and variants |
+| Sample Lab | Import, trim, slice, build kits and instruments |
+| Score Map | Profiles, motifs, cue families, world map, derivation |
+| Automation | Lanes, macros, envelopes, capture, mixer |
+| Library | Templates, snapshots, branches, favorites, collections, compare |
+
+## Quick Start
 
 ```bash
-git clone https://github.com/mcp-tool-shop-org/soundweave.git
-cd soundweave
 pnpm install
-pnpm build
-pnpm dev
+pnpm build    # 14 packages
+pnpm lint     # 14 packages
+pnpm test     # 27 test tasks, 299+ tests
+pnpm dev      # Start Studio dev server
 ```
 
-Open `http://localhost:3000` to launch the studio.
+## Testing
 
-### Run tests
+All packages have unit tests. The test suite covers:
 
-```bash
-pnpm test
-```
+- Schema validation (27 tests)
+- Pack integrity and auditing (20 tests)
+- Sample lab operations (33 tests)
+- Score map and world scoring (47 tests)
+- Automation lanes, macros, envelopes, capture (55 tests)
+- Library templates, snapshots, branches, favorites, compare (49 tests)
+- Studio store integration (60 tests)
 
-### Typecheck
+Run everything: `pnpm test`
 
-```bash
-pnpm typecheck
-```
+## Handbook
 
-## Studio features
+The [handbook](handbook/) is the comprehensive operating manual covering product vision, architecture, data model, studio usage, creative workflows, and engineering practices.
 
-- **Project** — edit pack metadata (name, version, description, author, tags)
-- **Assets** — manage audio file references with kind, duration, BPM, key
-- **Stems** — wrap assets with role, gain, loop, and mute settings
-- **Scenes** — compose layered stems into musical states with categories and fallbacks
-- **Bindings** — map game-state conditions to scenes with priority resolution
-- **Transitions** — define how scenes flow into each other (crossfade, stinger, bar-sync, etc.)
-- **Review** — automated validation, unused entity detection, integrity checks
-- **Preview** — simulate runtime state with manual controls or scripted sequences
-- **Export** — validate, preview, copy, and download runtime JSON packs
-
-### Example packs
-
-Three built-in packs loadable via the sidebar pack switcher:
-
-- **Minimal Pack** — 1 asset, 1 stem, 1 scene — the smallest valid pack
-- **Starter Adventure Pack** — exploration, tension, combat, victory, safe zone with transitions
-- **Combat Escalation Pack** — patrol → skirmish → boss → victory with stinger transitions
-
-## Architecture
-
-```
-SoundtrackPack (authoring)
-├── meta
-├── assets[]        → AudioAsset (src, kind, duration, bpm, key)
-├── stems[]         → Stem (assetId, role, gain, loop)
-├── scenes[]        → Scene (category, layers[], fallback)
-├── bindings[]      → TriggerBinding (conditions[], priority)
-└── transitions[]   → TransitionRule (from, to, mode, duration)
-
-RuntimeSoundtrackPack (exported)
-└── Same shape, editor-only fields stripped
-```
+Priority chapters:
+- [What Soundweave Is](handbook/src/01-vision.md)
+- [Design Principles](handbook/src/04-design-principles.md)
+- [Repository Overview](handbook/src/05-repository-overview.md)
+- [Studio Overview](handbook/src/21-studio-overview.md)
+- [Building a Cue from Scratch](handbook/src/30-building-a-cue.md)
+- [Working with Custom Samples](handbook/src/31-custom-samples.md)
+- [World Scoring](handbook/src/32-world-scoring-workflow.md)
+- [Automation and Performance Capture](handbook/src/33-automation-capture.md)
+- [Library, Branching, and Reuse](handbook/src/34-library-branching-reuse.md)
+- [Rendering and Runtime Export](handbook/src/38-rendering-runtime-export.md)
+- [Roadmap](handbook/src/39-roadmap.md)
+- [Glossary](handbook/src/40-glossary.md)
 
 ## License
 

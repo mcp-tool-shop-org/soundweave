@@ -17,6 +17,10 @@ import {
   CuesScreen,
   MixerScreen,
   ExportScreen,
+  SampleLabScreen,
+  ScoreMapScreen,
+  AutomationScreen,
+  LibraryScreen,
 } from "./screens";
 import { starterPack } from "./seed-data";
 
@@ -24,6 +28,7 @@ function ScreenRouter() {
   const section = useStudioStore((s) => s.section);
   switch (section) {
     case "project":
+    case "overview":
       return <ProjectScreen />;
     case "assets":
       return <AssetsScreen />;
@@ -49,6 +54,14 @@ function ScreenRouter() {
       return <MixerScreen />;
     case "export":
       return <ExportScreen />;
+    case "sample-lab":
+      return <SampleLabScreen />;
+    case "score-map":
+      return <ScoreMapScreen />;
+    case "automation":
+      return <AutomationScreen />;
+    case "library":
+      return <LibraryScreen />;
   }
 }
 

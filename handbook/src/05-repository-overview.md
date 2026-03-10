@@ -1,0 +1,80 @@
+# Repository Overview
+
+Soundweave is a TypeScript monorepo managed with pnpm workspaces and Turborepo.
+
+## Root Structure
+
+```
+soundweave/
+├── apps/              # Deployable applications
+│   ├── studio/        # Main authoring UI (Next.js 15)
+│   └── docs/          # Documentation site (Astro)
+├── packages/          # Shared libraries
+│   ├── schema/        # Canonical types and Zod validation
+│   ├── asset-index/   # Pack integrity indexing and auditing
+│   ├── audio-engine/  # Sample playback and voice management
+│   ├── scene-mapper/  # Trigger mapping logic (placeholder)
+│   ├── runtime-pack/  # Runtime export/import (placeholder)
+│   ├── review/        # Summaries and audit helpers (placeholder)
+│   ├── ui/            # Shared UI components (placeholder)
+│   ├── test-kit/      # Fixtures and test utilities
+│   ├── sample-lab/    # Trim, slice, kit, and instrument helpers
+│   ├── score-map/     # World scoring, motifs, profiles, cue families
+│   ├── automation/    # Lanes, macros, envelopes, capture
+│   └── library/       # Templates, snapshots, branches, favorites, compare
+├── examples/          # Example packs and starter content
+├── handbook/          # This handbook
+├── eslint.config.js   # Shared ESLint configuration
+├── tsconfig.base.json # Shared TypeScript base config
+├── turbo.json         # Turborepo pipeline configuration
+├── vitest.config.ts   # Root Vitest configuration
+└── pnpm-workspace.yaml
+```
+
+## Why a Monorepo
+
+Soundweave uses a monorepo because:
+
+- **Shared types**: The `@soundweave/schema` package defines all types. Every other package imports from it. A monorepo makes this dependency trivial.
+- **Atomic changes**: A schema change, a logic change, and a UI change can ship in one commit.
+- **Consistent tooling**: One ESLint config, one TypeScript base config, one test runner, one CI pipeline.
+- **Fast feedback**: `pnpm build && pnpm lint && pnpm test` validates everything.
+
+## Package Boundaries
+
+Each package has a single, clear responsibility:
+
+| Package | Owns | Does Not Own |
+|---------|------|--------------|
+| `schema` | Types, Zod schemas, parse/validate | Business logic, rendering |
+| `asset-index` | Integrity checks, duplicate detection | Asset file I/O |
+| `audio-engine` | Sample playback, voice management | Scene orchestration, mixing |
+| `sample-lab` | Trim, slice, kit, instrument logic | Audio file decoding |
+| `score-map` | Motifs, profiles, cue families, derivation | Playback, rendering |
+| `automation` | Lanes, macros, envelopes, capture | Audio DSP |
+| `library` | Templates, snapshots, branches, favorites | UI, persistence |
+| `test-kit` | Fixtures, loader utilities | Application tests |
+
+## Toolchain
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| pnpm | 10.x | Package management |
+| Turborepo | 2.x | Build orchestration |
+| TypeScript | 5.9+ | Type checking and compilation |
+| Vitest | 3.2+ | Unit and integration testing |
+| ESLint | 9.x | Linting |
+| Next.js | 15.x | Studio app framework |
+| Zustand | 5.x | Studio state management |
+| Zod | 4.x | Schema validation |
+
+## Build Configuration
+
+All packages use project references with `composite: true` in `tsconfig.json`, extending `../../tsconfig.base.json`. The base config targets ES2022 with ESNext modules and bundler module resolution.
+
+Each package has:
+- `package.json` with `build`, `lint`, and `test` scripts
+- `tsconfig.json` extending the base
+- `vitest.config.ts` for test configuration
+- `src/` with a barrel `index.ts`
+- `test/` with `index.test.ts`

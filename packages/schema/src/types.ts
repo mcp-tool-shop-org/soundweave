@@ -18,6 +18,14 @@ export interface SoundtrackPackMeta {
 
 export type AudioAssetKind = "loop" | "oneshot" | "stinger" | "ambient";
 
+export type AssetSourceType =
+  | "drums"
+  | "tonal"
+  | "ambience"
+  | "stinger"
+  | "texture"
+  | "fx";
+
 export interface AudioAsset {
   id: string;
   name: string;
@@ -30,6 +38,18 @@ export interface AudioAsset {
   loopEndMs?: number;
   tags?: string[];
   notes?: string;
+  /** Trim in-point in milliseconds (import workflow). */
+  trimStartMs?: number;
+  /** Trim out-point in milliseconds (import workflow). */
+  trimEndMs?: number;
+  /** Classification of the source material. */
+  sourceType?: AssetSourceType;
+  /** Original filename before import. */
+  originalFilename?: string;
+  /** Whether this asset was created via the import workflow. */
+  imported?: boolean;
+  /** Root MIDI note for tonal samples (e.g. 60 = C4). */
+  rootNote?: number;
 }
 
 // ── Stems ──
@@ -235,6 +255,83 @@ export interface SoundtrackPack {
   clips?: Clip[];
   /** Named cue structures */
   cues?: Cue[];
+  sampleSlices?: SampleSlice[];
+  sampleKits?: SampleKit[];
+  sampleInstruments?: SampleInstrument[];
+  motifFamilies?: MotifFamily[];
+  scoreProfiles?: ScoreProfile[];
+  cueFamilies?: CueFamily[];
+  scoreMap?: ScoreMapEntry[];
+  derivations?: DerivationRecord[];
+  automationLanes?: AutomationLane[];
+  macroMappings?: MacroMapping[];
+  sectionEnvelopes?: SectionEnvelope[];
+  automationCaptures?: AutomationCapture[];
+  templates?: LibraryTemplate[];
+  snapshots?: Snapshot[];
+  branches?: Branch[];
+  favorites?: Favorite[];
+  collections?: Collection[];
+}
+
+// ── Sample slicing ──
+
+export interface SampleSlice {
+  id: string;
+  assetId: string;
+  name: string;
+  startMs: number;
+  endMs: number;
+  rootNote?: number;
+}
+
+// ── Sample kits ──
+
+export interface SampleKitSlot {
+  pitch: number;
+  assetId: string;
+  sliceId?: string;
+  gainDb?: number;
+  label?: string;
+}
+
+export interface SampleKit {
+  id: string;
+  name: string;
+  slots: SampleKitSlot[];
+  tags?: string[];
+}
+
+// ── Sample instruments ──
+
+export interface SampleInstrument {
+  id: string;
+  name: string;
+  assetId: string;
+  rootNote: number;
+  pitchMin: number;
+  pitchMax: number;
+  attackMs?: number;
+  decayMs?: number;
+  sustainLevel?: number;
+  releaseMs?: number;
+  filterCutoffHz?: number;
+  filterQ?: number;
+}
+
+// ── Motif families ──
+
+export interface MotifFamily {
+  id: string;
+  name: string;
+  /** Source scene/clip/asset IDs this motif is built from. */
+  sourceIds: string[];
+  /** IDs of derived variants. */
+  variantIds?: string[];
+  /** Related scene IDs that use this motif. */
+  relatedSceneIds?: string[];
+  tags?: string[];
+  notes?: string;
 }
 
 // ── Cue structures ──
@@ -316,6 +413,285 @@ export interface PerformanceCapture {
   totalBars: number;
   events: PerformanceCaptureEvent[];
   /** When captured */
+  createdAt: string;
+}
+
+// ── Score profiles ──
+
+export interface ScoreProfile {
+  id: string;
+  name: string;
+  key?: string;
+  scale?: string;
+  tempoMin?: number;
+  tempoMax?: number;
+  intensityMin?: number;
+  intensityMax?: number;
+  preferredKitIds?: string[];
+  preferredInstrumentIds?: string[];
+  motifFamilyIds?: string[];
+  samplePaletteTags?: string[];
+  tags?: string[];
+  notes?: string;
+  /** Default intensity curve tendency (0–1) for this profile. */
+  defaultIntensity?: number;
+  /** Default brightness range (0–1) for this profile. */
+  defaultBrightness?: number;
+  /** Default space/reverb tendency (0–1) for this profile. */
+  defaultSpace?: number;
+  /** Default transition energy (0–1). */
+  defaultTransitionEnergy?: number;
+}
+
+// ── Cue families ──
+
+export type CueFamilyRole =
+  | "exploration"
+  | "combat"
+  | "boss"
+  | "recovery"
+  | "stealth"
+  | "tension"
+  | "victory"
+  | "mystery";
+
+export interface CueFamily {
+  id: string;
+  name: string;
+  role: CueFamilyRole;
+  sceneIds: string[];
+  motifFamilyIds?: string[];
+  scoreProfileId?: string;
+  tags?: string[];
+  notes?: string;
+}
+
+// ── Score map entries ──
+
+export type ScoreMapContextType =
+  | "region"
+  | "faction"
+  | "biome"
+  | "encounter"
+  | "safe-zone";
+
+export interface ScoreMapEntry {
+  id: string;
+  name: string;
+  contextType: ScoreMapContextType;
+  scoreProfileId?: string;
+  cueFamilyIds?: string[];
+  motifFamilyIds?: string[];
+  preferredKitIds?: string[];
+  preferredInstrumentIds?: string[];
+  tags?: string[];
+  notes?: string;
+}
+
+// ── Derivation records ──
+
+export type DerivationTransform =
+  | "intensify"
+  | "resolve"
+  | "darken"
+  | "brighten"
+  | "simplify"
+  | "elaborate"
+  | "reharmonize";
+
+export interface DerivationRecord {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  transform: DerivationTransform;
+  notes?: string;
+}
+
+// ── Automation ──
+
+/** Automatable parameter targets. */
+export type AutomationParam =
+  | "volume"
+  | "pan"
+  | "filterCutoff"
+  | "reverbSend"
+  | "delaySend"
+  | "intensity";
+
+/** Interpolation curve for automation segments. */
+export type AutomationCurve = "linear" | "exponential" | "step" | "smooth";
+
+/** A single automation keyframe. */
+export interface AutomationPoint {
+  /** Time offset in milliseconds from the start of the target. */
+  timeMs: number;
+  /** Normalised value 0–1. */
+  value: number;
+  /** Interpolation curve to the next point. */
+  curve?: AutomationCurve;
+}
+
+/** What the automation lane is attached to. */
+export type AutomationTargetKind = "clip-layer" | "scene-layer" | "cue-section";
+
+/** Identifies the attachment point for an automation lane. */
+export interface AutomationTarget {
+  kind: AutomationTargetKind;
+  /** ID of the clip, scene, or cue section this lane lives on. */
+  targetId: string;
+  /** Optional sub-selector (e.g. layer index, stem ID). */
+  layerRef?: string;
+}
+
+/** A single automation lane with keyframes. */
+export interface AutomationLane {
+  id: string;
+  name: string;
+  param: AutomationParam;
+  target: AutomationTarget;
+  points: AutomationPoint[];
+  /** Default value when no automation point covers a time. */
+  defaultValue?: number;
+  notes?: string;
+}
+
+// ── Macros ──
+
+/** High-value macro controls that drive multiple parameters at once. */
+export type MacroParam = "intensity" | "tension" | "brightness" | "space";
+
+/** A single macro-to-parameter influence rule. */
+export interface MacroMapping {
+  id: string;
+  macro: MacroParam;
+  /** Target parameter to influence. */
+  param: AutomationParam;
+  /** Influence weight 0–1 (how much macro movement affects param). */
+  weight: number;
+  /** Optional target scope (if absent, applies globally). */
+  targetId?: string;
+  /** Invert the mapping (macro up → param down). */
+  invert?: boolean;
+}
+
+/** Snapshot of current macro positions (0–1 each). */
+export interface MacroState {
+  intensity: number;
+  tension: number;
+  brightness: number;
+  space: number;
+}
+
+// ── Section envelopes ──
+
+/** Envelope shape applied to entry/exit of a cue section. */
+export type SectionEnvelopeShape =
+  | "fade-in"
+  | "fade-out"
+  | "swell"
+  | "duck"
+  | "filter-rise"
+  | "filter-fall";
+
+/** Shaped entry/exit behaviour for a cue section. */
+export interface SectionEnvelope {
+  id: string;
+  /** Scene or cue section this envelope applies to. */
+  targetId: string;
+  shape: SectionEnvelopeShape;
+  durationMs: number;
+  /** Intensity/depth of the effect, 0–1. */
+  depth?: number;
+  /** Which end of the section: entry or exit. */
+  position: "entry" | "exit";
+  notes?: string;
+}
+
+// ── Automation capture ──
+
+/** A recorded performance of macro/parameter moves. */
+export interface AutomationCapture {
+  id: string;
+  name: string;
+  /** When this capture was recorded (ISO string). */
+  recordedAt: string;
+  /** The macro or param that was performed. */
+  source: MacroParam | AutomationParam;
+  /** Recorded keyframes. */
+  points: AutomationPoint[];
+  /** Target lane ID to apply captured data to (optional). */
+  laneId?: string;
+  notes?: string;
+}
+
+// ── Library: templates, snapshots, branches, favorites, collections ──
+
+/** Entity kinds that can be templated, snapshotted, favorited, or branched. */
+export type LibraryEntityKind =
+  | "scene"
+  | "clip"
+  | "sample-kit"
+  | "sample-instrument"
+  | "score-profile"
+  | "cue-family"
+  | "motif-family"
+  | "automation-lane"
+  | "macro-setup"
+  | "section-envelope";
+
+/** A reusable template / preset saved from an entity. */
+export interface LibraryTemplate {
+  id: string;
+  name: string;
+  kind: LibraryEntityKind;
+  /** Serialised snapshot of the entity data (JSON-safe). */
+  data: Record<string, unknown>;
+  tags?: string[];
+  notes?: string;
+  createdAt: string;
+}
+
+/** A frozen snapshot of an entity at a point in time. */
+export interface Snapshot {
+  id: string;
+  label: string;
+  entityId: string;
+  entityKind: LibraryEntityKind;
+  /** Serialised entity data at snapshot time. */
+  data: Record<string, unknown>;
+  createdAt: string;
+  notes?: string;
+}
+
+/** A branch created from a snapshot, tracking lineage. */
+export interface Branch {
+  id: string;
+  name: string;
+  /** Snapshot this branch was forked from. */
+  sourceSnapshotId: string;
+  /** The new entity ID produced by this branch. */
+  entityId: string;
+  entityKind: LibraryEntityKind;
+  createdAt: string;
+  notes?: string;
+}
+
+/** A user-favorited entity reference. */
+export interface Favorite {
+  id: string;
+  entityId: string;
+  entityKind: LibraryEntityKind;
+  addedAt: string;
+  notes?: string;
+}
+
+/** A named collection of favorites. */
+export interface Collection {
+  id: string;
+  name: string;
+  favoriteIds: string[];
+  tags?: string[];
+  notes?: string;
   createdAt: string;
 }
 

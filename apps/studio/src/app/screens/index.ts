@@ -11,3 +11,7 @@ export { PerformanceScreen } from "./PerformanceScreen";
 export { CuesScreen } from "./CuesScreen";
 export { MixerScreen } from "./MixerScreen";
 export { ExportScreen } from "./ExportScreen";
+export { SampleLabScreen } from "./SampleLabScreen";
+export { ScoreMapScreen } from "./ScoreMapScreen";
+export { AutomationScreen } from "./AutomationScreen";
+export { LibraryScreen } from "./LibraryScreen";

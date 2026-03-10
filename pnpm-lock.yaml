@@ -160,6 +160,19 @@ importers:
         specifier: ^3.2.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
 
+  packages/automation:
+    dependencies:
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
+
   packages/clip-engine:
     dependencies:
       '@soundweave/instrument-rack':
@@ -191,6 +204,19 @@ importers:
       '@soundweave/test-kit':
         specifier: workspace:*
         version: link:../test-kit
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
+
+  packages/library:
+    dependencies:
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3
@@ -270,6 +296,19 @@ importers:
         specifier: ^3.2.0
         version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
 
+  packages/sample-lab:
+    dependencies:
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
+
   packages/scene-mapper:
     dependencies:
       '@soundweave/schema':
@@ -295,6 +334,19 @@ importers:
       '@soundweave/test-kit':
         specifier: workspace:*
         version: link:../test-kit
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
+
+  packages/score-map:
+    dependencies:
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
       typescript:
         specifier: ^5.8.0
         version: 5.9.3

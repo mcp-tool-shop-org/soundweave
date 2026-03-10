@@ -1,27 +1,19 @@
 # @soundweave/runtime-pack
 
-Runtime export, parsing, and serialization utilities for Soundweave soundtrack packs.
+Runtime export and import for Soundweave soundtrack packs.
 
-## Includes
+## What It Owns
 
-- runtime pack types
-- export from authoring packs
-- runtime pack parsing and validation
-- deterministic JSON serialization
+- Authoring pack → runtime pack stripping
+- Runtime pack serialization
+- Import/export round-trip verification
 
-## Main exports
+## Status
 
-- `exportRuntimePack` — transform authoring pack into runtime contract
-- `parseRuntimePack` — parse unknown input, throws on invalid
-- `safeParseRuntimePack` — parse without throwing, returns structured issues
-- `validateRuntimePack` — validation with ok/issues result
-- `serializeRuntimePack` — deterministic JSON output
-- `roundTripRuntimePack` — export → serialize → parse in one call
+Placeholder package. Runtime export logic will be expanded in Phase 20 (Publishing, Packaging, and Runtime Integration) to include export profiles, asset bundling, and engine adapter manifests.
 
-## Scope
+## What It Does Not Own
 
-This package defines the stable runtime contract for downstream soundtrack consumers.
-
-It strips editor-only fields (notes, display names on bindings/transitions) and preserves only runtime-relevant data.
-
-Round-trip stability is guaranteed: export → serialize → parse yields an equivalent runtime pack.
+- Authoring data model (see `@soundweave/schema`)
+- Audio file packaging
+- Engine-specific playback SDKs

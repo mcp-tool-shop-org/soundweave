@@ -1,29 +1,37 @@
 # @soundweave/audio-engine
 
-Scene-layer resolution, transition lookup, and simulation utilities for Soundweave packs.
+Sample playback and voice management for Soundweave.
 
-## Includes
+## What It Owns
 
-- active stem resolution for scenes (with de-dupe and required/optional separation)
-- exact transition lookup between scenes (first pack-order match wins)
-- deterministic simulation of soundtrack behavior across runtime state sequences
-- structured per-step warnings for preview and debugging
+- Trimmed region playback
+- Slice playback
+- Kit slot playback
+- Sample instrument note playback (with pitch shifting)
+- Voice lifecycle management
 
-## Main exports
+## Key Exports
 
-- `resolveActiveLayers(pack, sceneId)` — resolve which stems are active for a scene
-- `findTransitionRule(pack, fromSceneId, toSceneId)` — find exact transition rule
-- `simulateStateSequence(pack, states)` — simulate behavior across a state sequence
+```ts
+import {
+  playTrimmedRegion,
+  playSlice,
+  playKitSlot,
+  playSampleInstrumentNote,
+} from "@soundweave/audio-engine";
+```
 
-## Scope
+- `playTrimmedRegion` — play an audio buffer within trim boundaries
+- `playSlice` — play a specific sample slice
+- `playKitSlot` — play a kit slot at a given pitch
+- `playSampleInstrumentNote` — play a pitched note on a sample instrument
 
-This package provides decision and simulation logic for adaptive soundtrack behavior.
-It does **not** perform real audio playback.
+## What It Does Not Own
 
-## Behavior notes
+- Scene orchestration and mixing (handled by Studio)
+- Audio file decoding (browser AudioContext handles this)
+- Clip/cue composition (handled by `@soundweave/schema` types)
 
-- Missing scenes and stems produce warnings, never throws
-- Same-scene transitions return `undefined` (no drama)
-- Transition lookup is exact match only; first pack-order rule wins
-- Layer de-dupe preserves first occurrence order
-- Simulation emits one step per input state with accumulated warnings
+## Dependencies
+
+- `@soundweave/schema` — types for assets, slices, kits, instruments

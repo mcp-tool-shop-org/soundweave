@@ -1,0 +1,88 @@
+import type { LibraryEntityKind } from "@soundweave/schema";
+
+/** A single field difference between two versions. */
+export interface FieldDiff {
+  field: string;
+  a: unknown;
+  b: unknown;
+}
+
+/** Result of comparing two entity snapshots. */
+export interface CompareResult {
+  entityKind: LibraryEntityKind;
+  labelA: string;
+  labelB: string;
+  same: string[];
+  changed: FieldDiff[];
+  onlyA: string[];
+  onlyB: string[];
+}
+
+/**
+ * Compare two plain data records field by field.
+ * Produces a structural diff suitable for side-by-side display.
+ */
+export function compareEntities(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  entityKind: LibraryEntityKind,
+  labelA: string,
+  labelB: string,
+): CompareResult {
+  const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  const same: string[] = [];
+  const changed: FieldDiff[] = [];
+  const onlyA: string[] = [];
+  const onlyB: string[] = [];
+
+  for (const key of allKeys) {
+    const inA = key in a;
+    const inB = key in b;
+
+    if (inA && !inB) {
+      onlyA.push(key);
+    } else if (!inA && inB) {
+      onlyB.push(key);
+    } else if (JSON.stringify(a[key]) === JSON.stringify(b[key])) {
+      same.push(key);
+    } else {
+      changed.push({ field: key, a: a[key], b: b[key] });
+    }
+  }
+
+  return { entityKind, labelA, labelB, same, changed, onlyA, onlyB };
+}
+
+/** Quick check: are two entities structurally identical? */
+export function areEqual(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Count how many fields differ between two entities. */
+export function diffCount(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): number {
+  const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  let count = 0;
+  for (const key of allKeys) {
+    const inA = key in a;
+    const inB = key in b;
+    if (inA !== inB || JSON.stringify(a[key]) !== JSON.stringify(b[key])) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/** Pick a winner — return the data from the chosen side. */
+export function promoteVersion(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  choice: "a" | "b",
+): Record<string, unknown> {
+  return { ...(choice === "a" ? a : b) };
+}
