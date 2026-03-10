@@ -1,9 +1,12 @@
 "use client";
 
 import { useStudioStore } from "../store";
-import type { Scene, SceneCategory } from "@soundweave/schema";
+import type { Scene, SceneCategory, SectionRole, IntensityLevel } from "@soundweave/schema";
 
 const EMPTY_CLIPS: never[] = [];
+
+const SECTION_ROLES: SectionRole[] = ["intro", "loop", "outro"];
+const INTENSITY_LEVELS: IntensityLevel[] = ["low", "mid", "high"];
 
 const SCENE_CATEGORIES: SceneCategory[] = [
   "exploration",
@@ -281,14 +284,14 @@ export function ScenesScreen() {
                   })}
                 </div>
 
-                {/* Clip Layers */}
+                {/* Clip Layers — Arrangement */}
                 <div className="sub-list">
                   <div className="sub-list-header">
-                    <h4>Clip Layers ({(selected.clipLayers ?? []).length})</h4>
+                    <h4>Clip Arrangement ({(selected.clipLayers ?? []).length})</h4>
                     <button
                       className="btn btn-sm"
                       onClick={() =>
-                        addSceneClipLayer(selected.id, { clipId: "" })
+                        addSceneClipLayer(selected.id, { clipId: "", order: (selected.clipLayers ?? []).length })
                       }
                     >
                       + Add Clip
@@ -299,14 +302,30 @@ export function ScenesScreen() {
                       <p style={{ fontSize: 13 }}>No clip layers — add clips from the Clips screen first</p>
                     </div>
                   )}
-                  {(selected.clipLayers ?? []).map((ref, i) => {
+                  {[...(selected.clipLayers ?? [])]
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                    .map((ref, i) => {
                     const clipMissing =
                       ref.clipId !== "" &&
                       !clips.some((c) => c.id === ref.clipId);
+                    const selectedClip = clips.find((c) => c.id === ref.clipId);
+                    const variants = selectedClip?.variants ?? [];
                     return (
                       <div key={i} className="sub-list-item">
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
                           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <input
+                              className="field-input"
+                              type="number"
+                              style={{ width: 48 }}
+                              title="Order"
+                              value={ref.order ?? 0}
+                              onChange={(e) =>
+                                updateSceneClipLayer(selected.id, i, {
+                                  order: Number(e.target.value) || 0,
+                                })
+                              }
+                            />
                             <select
                               className="field-input"
                               style={{ flex: 1 }}
@@ -324,6 +343,70 @@ export function ScenesScreen() {
                                 </option>
                               ))}
                             </select>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() =>
+                                removeSceneClipLayer(selected.id, i)
+                              }
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <select
+                              className="field-input"
+                              style={{ width: 100 }}
+                              title="Section"
+                              value={ref.sectionRole ?? "loop"}
+                              onChange={(e) =>
+                                updateSceneClipLayer(selected.id, i, {
+                                  sectionRole: e.target.value as SectionRole,
+                                })
+                              }
+                            >
+                              {SECTION_ROLES.map((r) => (
+                                <option key={r} value={r}>
+                                  {r}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              className="field-input"
+                              style={{ width: 80 }}
+                              title="Intensity"
+                              value={ref.intensity ?? "low"}
+                              onChange={(e) =>
+                                updateSceneClipLayer(selected.id, i, {
+                                  intensity: e.target.value as IntensityLevel,
+                                })
+                              }
+                            >
+                              {INTENSITY_LEVELS.map((l) => (
+                                <option key={l} value={l}>
+                                  {l}
+                                </option>
+                              ))}
+                            </select>
+                            {variants.length > 0 && (
+                              <select
+                                className="field-input"
+                                style={{ width: 120 }}
+                                title="Variant"
+                                value={ref.variantId ?? ""}
+                                onChange={(e) =>
+                                  updateSceneClipLayer(selected.id, i, {
+                                    variantId: e.target.value || undefined,
+                                  })
+                                }
+                              >
+                                <option value="">Main</option>
+                                {variants.map((v) => (
+                                  <option key={v.id} value={v.id}>
+                                    {v.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
                             <label className="field-checkbox">
                               <input
                                 type="checkbox"
@@ -336,14 +419,6 @@ export function ScenesScreen() {
                               />
                               Muted
                             </label>
-                            <button
-                              className="btn btn-sm btn-danger"
-                              onClick={() =>
-                                removeSceneClipLayer(selected.id, i)
-                              }
-                            >
-                              ×
-                            </button>
                           </div>
                           {clipMissing && (
                             <div

@@ -2,11 +2,20 @@
 // ClipPlayer — plays a single clip through the instrument rack
 // ────────────────────────────────────────────
 
-import type { Clip } from "@soundweave/schema";
+import type { Clip, ClipNote } from "@soundweave/schema";
 import type { InstrumentRack } from "@soundweave/instrument-rack";
 import type { Voice } from "@soundweave/instrument-rack";
 import { scheduleNotes, clipLengthSeconds } from "./scheduler.js";
 import type { ClipPlaybackState } from "./types.js";
+
+/**
+ * Resolve which notes to play for a clip, considering variant selection.
+ */
+export function resolveClipNotes(clip: Clip, variantId?: string): readonly ClipNote[] {
+  if (!variantId) return clip.notes;
+  const variant = clip.variants?.find((v) => v.id === variantId);
+  return variant ? variant.notes : clip.notes;
+}
 
 /**
  * Plays a single clip at a scheduled AudioContext time,
@@ -17,6 +26,7 @@ export class ClipPlayer {
   private activeVoices: Voice[] = [];
   private loopTimer: ReturnType<typeof setTimeout> | null = null;
   private _state: ClipPlaybackState = "stopped";
+  private _variantId: string | undefined;
 
   get state(): ClipPlaybackState {
     return this._state;
@@ -25,6 +35,8 @@ export class ClipPlayer {
   /**
    * Play the clip starting at `startTime` (AudioContext time).
    * If clip.loop is true, re-schedules automatically.
+   *
+   * @param variantId Optional variant ID to use instead of main notes
    */
   play(
     ctx: AudioContext,
@@ -32,16 +44,19 @@ export class ClipPlayer {
     rack: InstrumentRack,
     output: AudioNode,
     startTime?: number,
+    variantId?: string,
   ): void {
     this.stop();
 
     const voice = rack.getVoice(clip.instrumentId);
     if (!voice) return;
 
+    this._variantId = variantId;
     const now = startTime ?? ctx.currentTime;
     this._state = "playing";
 
-    this.scheduleClipNotes(ctx, clip, voice, output, now);
+    const notes = resolveClipNotes(clip, variantId);
+    this.scheduleClipNotes(ctx, notes, clip.bpm, voice, output, now);
 
     if (clip.loop) {
       this.scheduleLoop(ctx, clip, rack, output, now);
@@ -68,12 +83,13 @@ export class ClipPlayer {
 
   private scheduleClipNotes(
     ctx: AudioContext,
-    clip: Clip,
+    notes: readonly ClipNote[],
+    bpm: number,
     instrumentVoice: { playNote: (ctx: AudioContext, pitch: number, velocity: number, startTime: number, duration: number, output: AudioNode) => Voice },
     output: AudioNode,
     startTime: number,
   ): void {
-    const scheduled = scheduleNotes(clip.notes, clip.bpm, startTime);
+    const scheduled = scheduleNotes(notes, bpm, startTime);
 
     for (const note of scheduled) {
       const v = instrumentVoice.playNote(
@@ -109,7 +125,8 @@ export class ClipPlayer {
       if (!voice) return;
 
       const nextStartTime = loopStartTime + clipDuration;
-      this.scheduleClipNotes(ctx, clip, voice, output, nextStartTime);
+      const notes = resolveClipNotes(clip, this._variantId);
+      this.scheduleClipNotes(ctx, notes, clip.bpm, voice, output, nextStartTime);
       this.scheduleLoop(ctx, clip, rack, output, nextStartTime);
     }, Math.max(0, msUntilNextLoop - 100)); // 100ms lookahead
   }

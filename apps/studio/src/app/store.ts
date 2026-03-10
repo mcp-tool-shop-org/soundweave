@@ -14,6 +14,7 @@ import type {
   SoundtrackPackMeta,
   Clip,
   ClipNote,
+  ClipVariant,
 } from "@soundweave/schema";
 
 // ── Section type ──
@@ -28,6 +29,7 @@ export type Section =
   | "transitions"
   | "review"
   | "preview"
+  | "performance"
   | "export";
 
 // ── Store shape ──
@@ -112,6 +114,16 @@ export interface StudioState {
     partial: Partial<SceneClipRef>,
   ) => void;
   removeSceneClipLayer: (sceneId: string, layerIndex: number) => void;
+
+  // Clip variant CRUD
+  addClipVariant: (clipId: string, variant: ClipVariant) => void;
+  updateClipVariant: (
+    clipId: string,
+    variantId: string,
+    partial: Partial<ClipVariant>,
+  ) => void;
+  removeClipVariant: (clipId: string, variantId: string) => void;
+  duplicateClipAsVariant: (clipId: string, variantName: string) => void;
 }
 
 // ── Default empty pack ──
@@ -467,6 +479,64 @@ export const useStudioStore = create<StudioState>((set) => ({
               }
             : s,
         ),
+      },
+    })),
+
+  // Clip variants
+  addClipVariant: (clipId, variant) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId
+            ? { ...c, variants: [...(c.variants ?? []), variant] }
+            : c,
+        ),
+      },
+    })),
+  updateClipVariant: (clipId, variantId, partial) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId
+            ? {
+                ...c,
+                variants: (c.variants ?? []).map((v) =>
+                  v.id === variantId ? { ...v, ...partial } : v,
+                ),
+              }
+            : c,
+        ),
+      },
+    })),
+  removeClipVariant: (clipId, variantId) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId
+            ? {
+                ...c,
+                variants: (c.variants ?? []).filter((v) => v.id !== variantId),
+              }
+            : c,
+        ),
+      },
+    })),
+  duplicateClipAsVariant: (clipId, variantName) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) => {
+          if (c.id !== clipId) return c;
+          const variant: ClipVariant = {
+            id: `var-${Date.now()}`,
+            name: variantName,
+            notes: [...c.notes],
+          };
+          return { ...c, variants: [...(c.variants ?? []), variant] };
+        }),
       },
     })),
 }));

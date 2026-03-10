@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scheduleNotes, clipLengthSeconds } from "../src/scheduler";
+import { scheduleNotes, clipLengthSeconds, quantizedLaunchTime } from "../src/scheduler";
 import type { ClipNote } from "@soundweave/schema";
 
 describe("scheduleNotes", () => {
@@ -69,5 +69,51 @@ describe("clipLengthSeconds", () => {
 
   it("handles odd beat counts", () => {
     expect(clipLengthSeconds(120, 3)).toBeCloseTo(1.5);
+  });
+});
+
+describe("quantizedLaunchTime", () => {
+  it("returns currentTime for mode 'none'", () => {
+    expect(quantizedLaunchTime(1.5, 120, "none")).toBe(1.5);
+  });
+
+  it("snaps to next beat boundary", () => {
+    // 120 BPM = 0.5s per beat
+    // currentTime = 0.3 → next beat at 0.5
+    expect(quantizedLaunchTime(0.3, 120, "beat")).toBeCloseTo(0.5);
+  });
+
+  it("returns exact time when already on beat boundary", () => {
+    // currentTime = 1.0 → already on beat, ceil(1.0/0.5)*0.5 = 1.0
+    expect(quantizedLaunchTime(1.0, 120, "beat")).toBeCloseTo(1.0);
+  });
+
+  it("snaps to next bar boundary (4 beats)", () => {
+    // 120 BPM = 0.5s/beat, 2s/bar
+    // currentTime = 1.5 → next bar at 2.0
+    expect(quantizedLaunchTime(1.5, 120, "bar")).toBeCloseTo(2.0);
+  });
+
+  it("snaps to next bar with custom beatsPerBar", () => {
+    // 120 BPM = 0.5s/beat, 3 beats/bar = 1.5s/bar
+    // currentTime = 0.8 → next bar at 1.5
+    expect(quantizedLaunchTime(0.8, 120, "bar", 3)).toBeCloseTo(1.5);
+  });
+
+  it("returns at least currentTime", () => {
+    const result = quantizedLaunchTime(5.0, 120, "beat");
+    expect(result).toBeGreaterThanOrEqual(5.0);
+  });
+
+  it("handles very small times", () => {
+    expect(quantizedLaunchTime(0.001, 120, "beat")).toBeCloseTo(0.5);
+  });
+
+  it("handles 60 BPM correctly", () => {
+    // 60 BPM = 1s/beat
+    // currentTime = 0.5 → next beat at 1.0
+    expect(quantizedLaunchTime(0.5, 60, "beat")).toBeCloseTo(1.0);
+    // next bar at 4.0 (4 beats * 1s/beat)
+    expect(quantizedLaunchTime(0.5, 60, "bar")).toBeCloseTo(4.0);
   });
 });

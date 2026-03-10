@@ -7,6 +7,7 @@ import { NoteGrid } from "../components/NoteGrid";
 
 const CLIP_LANES: ClipLane[] = ["drums", "bass", "harmony", "motif", "accent"];
 const EMPTY_CLIPS: never[] = [];
+const EMPTY_VARIANTS: never[] = [];
 
 function newClip(n: number): Clip {
   return {
@@ -30,6 +31,8 @@ export function ClipsScreen() {
   const deleteClip = useStudioStore((s) => s.deleteClip);
   const addClipNote = useStudioStore((s) => s.addClipNote);
   const removeClipNote = useStudioStore((s) => s.removeClipNote);
+  const removeClipVariant = useStudioStore((s) => s.removeClipVariant);
+  const duplicateClipAsVariant = useStudioStore((s) => s.duplicateClipAsVariant);
 
   const selected = clips.find((c) => c.id === selectedId) ?? null;
 
@@ -221,6 +224,46 @@ export function ClipsScreen() {
                     onAddNote={(note) => addClipNote(selected.id, note)}
                     onRemoveNote={(index) => removeClipNote(selected.id, index)}
                   />
+                </div>
+
+                {/* Variants */}
+                <div className="sub-list">
+                  <div className="sub-list-header">
+                    <h4>Variants ({(selected.variants ?? EMPTY_VARIANTS).length})</h4>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() =>
+                        duplicateClipAsVariant(
+                          selected.id,
+                          `Variant ${(selected.variants ?? []).length + 1}`,
+                        )
+                      }
+                    >
+                      + Duplicate as Variant
+                    </button>
+                  </div>
+                  {(selected.variants ?? EMPTY_VARIANTS).length === 0 && (
+                    <div className="empty-state" style={{ padding: "8px 0" }}>
+                      <p style={{ fontSize: 13 }}>
+                        No variants — duplicate the clip to create A/B patterns
+                      </p>
+                    </div>
+                  )}
+                  {(selected.variants ?? EMPTY_VARIANTS).map((v) => (
+                    <div key={v.id} className="sub-list-item">
+                      <div style={{ flex: 1, display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ flex: 1 }}>
+                          {v.name} ({v.notes.length} notes)
+                        </span>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => removeClipVariant(selected.id, v.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="field-group" style={{ marginTop: 12 }}>

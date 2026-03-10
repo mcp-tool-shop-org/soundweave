@@ -14,6 +14,7 @@ const navItems: { section: Section; label: string }[] = [
   { section: "transitions", label: "Transitions" },
   { section: "review", label: "Review" },
   { section: "preview", label: "Preview" },
+  { section: "performance", label: "Performance" },
   { section: "export", label: "Export" },
 ];
 

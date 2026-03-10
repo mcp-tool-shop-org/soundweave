@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ClipPlayer } from "../src/clip-player";
+import { ClipPlayer, resolveClipNotes } from "../src/clip-player";
 import type { Clip } from "@soundweave/schema";
 import type { InstrumentRack } from "@soundweave/instrument-rack";
 import type { InstrumentVoice, Voice } from "@soundweave/instrument-rack";
@@ -134,5 +134,83 @@ describe("ClipPlayer", () => {
     // Play again — should stop previous voices
     player.play(ctx, testClip, rack, output);
     expect(stopFn).toHaveBeenCalledTimes(3);
+  });
+
+  it("uses variant notes when variantId is provided", () => {
+    const variantNotes = [
+      { pitch: 72, startTick: 0, durationTicks: 480, velocity: 110 },
+    ];
+    const clipWithVariants: Clip = {
+      ...testClip,
+      variants: [
+        { id: "var-a", name: "Variant A", notes: variantNotes },
+      ],
+    };
+
+    const voice = mockVoice();
+    const rack = mockRack(voice);
+    const ctx = mockAudioContext();
+    const output = ctx.createGain();
+
+    player.play(ctx, clipWithVariants, rack, output, 0, "var-a");
+    expect(voice.playNote).toHaveBeenCalledTimes(1);
+    expect(voice.playNote).toHaveBeenCalledWith(
+      ctx, 72, 110, expect.any(Number), expect.any(Number), output,
+    );
+  });
+
+  it("falls back to main notes when variantId not found", () => {
+    const voice = mockVoice();
+    const rack = mockRack(voice);
+    const ctx = mockAudioContext();
+    const output = ctx.createGain();
+
+    player.play(ctx, testClip, rack, output, 0, "nonexistent");
+    expect(voice.playNote).toHaveBeenCalledTimes(3); // main notes
+  });
+});
+
+describe("resolveClipNotes", () => {
+  const clip: Clip = {
+    id: "test",
+    name: "Test",
+    lane: "motif",
+    instrumentId: "lead",
+    bpm: 120,
+    lengthBeats: 4,
+    notes: [
+      { pitch: 60, startTick: 0, durationTicks: 480, velocity: 100 },
+    ],
+    variants: [
+      {
+        id: "var-b",
+        name: "B",
+        notes: [
+          { pitch: 72, startTick: 0, durationTicks: 240, velocity: 80 },
+          { pitch: 74, startTick: 240, durationTicks: 240, velocity: 80 },
+        ],
+      },
+    ],
+    loop: false,
+  };
+
+  it("returns main notes when no variantId", () => {
+    expect(resolveClipNotes(clip)).toBe(clip.notes);
+    expect(resolveClipNotes(clip, undefined)).toBe(clip.notes);
+  });
+
+  it("returns variant notes when variantId matches", () => {
+    const result = resolveClipNotes(clip, "var-b");
+    expect(result).toHaveLength(2);
+    expect(result[0].pitch).toBe(72);
+  });
+
+  it("returns main notes when variantId does not match", () => {
+    expect(resolveClipNotes(clip, "no-such")).toBe(clip.notes);
+  });
+
+  it("handles clip without variants", () => {
+    const plain: Clip = { ...clip, variants: undefined };
+    expect(resolveClipNotes(plain, "var-b")).toBe(plain.notes);
   });
 });

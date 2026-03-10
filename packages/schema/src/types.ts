@@ -146,6 +146,15 @@ export interface InstrumentPreset {
 
 export type ClipLane = "drums" | "bass" | "harmony" | "motif" | "accent";
 
+/** Section role for intro→loop→outro flow */
+export type SectionRole = "intro" | "loop" | "outro";
+
+/** Intensity level for scene escalation */
+export type IntensityLevel = "low" | "mid" | "high";
+
+/** Quantize mode for clip launch timing */
+export type QuantizeMode = "none" | "beat" | "bar";
+
 /** A single note event in a clip */
 export interface ClipNote {
   /** MIDI note number (0–127). For drums, maps to kit piece index. */
@@ -156,6 +165,14 @@ export interface ClipNote {
   durationTicks: number;
   /** Velocity 0–127 */
   velocity: number;
+}
+
+/** A named variant of a clip (alternate pattern) */
+export interface ClipVariant {
+  id: string;
+  name: string;
+  notes: ClipNote[];
+  tags?: string[];
 }
 
 export interface Clip {
@@ -172,8 +189,10 @@ export interface Clip {
   timeSignature?: number;
   /** Quantize grid: ticks per snap (120 = 16th, 240 = 8th, 480 = quarter) */
   quantize?: number;
-  /** The note data */
+  /** The note data (default variant) */
   notes: ClipNote[];
+  /** Named variants (A/B patterns) */
+  variants?: ClipVariant[];
   /** Loop this clip */
   loop: boolean;
   gainDb?: number;
@@ -187,6 +206,14 @@ export interface SceneClipRef {
   gainDb?: number;
   /** Start muted (user can unmute live) */
   mutedByDefault?: boolean;
+  /** Playback order within this scene (lower = first) */
+  order?: number;
+  /** Section role: intro plays once, loop repeats, outro plays on exit */
+  sectionRole?: SectionRole;
+  /** Intensity tier — clips activate based on current intensity */
+  intensity?: IntensityLevel;
+  /** Which variant to use (default = main notes) */
+  variantId?: string;
 }
 
 // ── Pack ──
