@@ -189,6 +189,10 @@ export interface Clip {
   timeSignature?: number;
   /** Quantize grid: ticks per snap (120 = 16th, 240 = 8th, 480 = quarter) */
   quantize?: number;
+  /** Key root (0–11 pitch class, 0 = C) */
+  keyRoot?: number;
+  /** Scale name (e.g. "major", "minor", "pentatonic") */
+  keyScale?: string;
   /** The note data (default variant) */
   notes: ClipNote[];
   /** Named variants (A/B patterns) */

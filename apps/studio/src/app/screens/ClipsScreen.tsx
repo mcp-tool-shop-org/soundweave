@@ -4,10 +4,47 @@ import { useStudioStore } from "../store";
 import type { Clip, ClipLane } from "@soundweave/schema";
 import { FACTORY_PRESETS } from "@soundweave/instrument-rack";
 import { NoteGrid } from "../components/NoteGrid";
+import {
+  clipKey,
+  clipTranspose,
+  clipTransposeInKey,
+  clipInvert,
+  clipReverse,
+  clipOctaveShift,
+  clipRhythmScale,
+  clipDuplicateWithVariation,
+  clipSnapToScale,
+  clipFindOutOfScale,
+  clipRhythmicVariation,
+  clipMelodicVariation,
+  clipThinNotes,
+  clipDensifyNotes,
+  clipAccentEveryN,
+  clipAddGhostHits,
+  clipRemoveGhostHits,
+  clipDeriveIntensity,
+  clipAddTension,
+  clipBrighten,
+  clipPadVoicing,
+  clipBassLine,
+  clipArpeggiate,
+  createTransformedVariant,
+  chordPalette,
+  progressionFromDegrees,
+} from "@soundweave/clip-engine";
+import {
+  SCALE_NAMES,
+  NOTE_NAMES,
+  type Key,
+  type Chord,
+  type ChordMarker,
+  type IntensityTier,
+} from "@soundweave/music-theory";
 
 const CLIP_LANES: ClipLane[] = ["drums", "bass", "harmony", "motif", "accent"];
 const EMPTY_CLIPS: never[] = [];
 const EMPTY_VARIANTS: never[] = [];
+const INTENSITY_TIERS: IntensityTier[] = ["low", "mid", "high"];
 
 function newClip(n: number): Clip {
   return {
@@ -33,8 +70,12 @@ export function ClipsScreen() {
   const removeClipNote = useStudioStore((s) => s.removeClipNote);
   const removeClipVariant = useStudioStore((s) => s.removeClipVariant);
   const duplicateClipAsVariant = useStudioStore((s) => s.duplicateClipAsVariant);
+  const addClipVariant = useStudioStore((s) => s.addClipVariant);
 
   const selected = clips.find((c) => c.id === selectedId) ?? null;
+  const key: Key | null = selected ? clipKey(selected) : null;
+  const outOfScale = selected && key ? clipFindOutOfScale(selected.notes, key) : [];
+  const palette = key ? chordPalette(key) : [];
 
   function handleAdd() {
     let n = clips.length + 1;
@@ -214,6 +255,66 @@ export function ClipsScreen() {
                   </label>
                 </div>
 
+                {/* Key / Scale */}
+                <div className="field-row">
+                  <div className="field-group">
+                    <label className="field-label">Key Root</label>
+                    <select
+                      className="field-input"
+                      value={selected.keyRoot ?? ""}
+                      onChange={(e) =>
+                        updateClip(selected.id, {
+                          keyRoot: e.target.value === "" ? undefined : Number(e.target.value),
+                        })
+                      }
+                    >
+                      <option value="">— none —</option>
+                      {NOTE_NAMES.map((name, i) => (
+                        <option key={i} value={i}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <label className="field-label">Scale</label>
+                    <select
+                      className="field-input"
+                      value={selected.keyScale ?? ""}
+                      onChange={(e) =>
+                        updateClip(selected.id, {
+                          keyScale: e.target.value || undefined,
+                        })
+                      }
+                    >
+                      <option value="">— none —</option>
+                      {SCALE_NAMES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {key && outOfScale.length > 0 && (
+                    <div className="field-group">
+                      <label className="field-label">Scale Check</label>
+                      <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                        <span className="text-dim" style={{ fontSize: 12 }}>
+                          {outOfScale.length} out-of-scale note{outOfScale.length > 1 ? "s" : ""}
+                        </span>
+                        <button
+                          className="btn btn-sm"
+                          onClick={() => updateClip(selected.id, { notes: clipSnapToScale(selected.notes, key) })}
+                        >
+                          Snap All
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {key && outOfScale.length === 0 && selected.notes.length > 0 && (
+                    <div className="field-group">
+                      <label className="field-label">Scale Check</label>
+                      <span className="text-dim" style={{ fontSize: 12, lineHeight: "32px" }}>✓ All in scale</span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Note grid editor */}
                 <div className="sub-list">
                   <div className="sub-list-header">
@@ -225,6 +326,141 @@ export function ClipsScreen() {
                     onRemoveNote={(index) => removeClipNote(selected.id, index)}
                   />
                 </div>
+
+                {/* Motif Transforms */}
+                {selected.notes.length > 0 && (
+                  <div className="sub-list">
+                    <div className="sub-list-header">
+                      <h4>Motif Transforms</h4>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 0" }}>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipTranspose(selected.notes, 1) })}>+1 semi</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipTranspose(selected.notes, -1) })}>−1 semi</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipOctaveShift(selected.notes, 1) })}>+octave</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipOctaveShift(selected.notes, -1) })}>−octave</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipInvert(selected.notes) })}>Invert</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipReverse(selected.notes) })}>Reverse</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipRhythmScale(selected.notes, 2) })}>×2 stretch</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipRhythmScale(selected.notes, 0.5) })}>×½ compress</button>
+                      {key && (
+                        <>
+                          <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipTransposeInKey(selected.notes, 1, key) })}>+1 degree</button>
+                          <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipTransposeInKey(selected.notes, -1, key) })}>−1 degree</button>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ padding: "0 0 8px" }}>
+                      <span className="text-dim" style={{ fontSize: 11 }}>
+                        Derive as variant:
+                      </span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        <button className="btn btn-sm" onClick={() => addClipVariant(selected.id, createTransformedVariant(selected, "Inverted", clipInvert(selected.notes)))}>+ Inverted</button>
+                        <button className="btn btn-sm" onClick={() => addClipVariant(selected.id, createTransformedVariant(selected, "Reversed", clipReverse(selected.notes)))}>+ Reversed</button>
+                        <button className="btn btn-sm" onClick={() => addClipVariant(selected.id, createTransformedVariant(selected, "Octave Up", clipOctaveShift(selected.notes, 1)))}>+ Octave Up</button>
+                        <button className="btn btn-sm" onClick={() => addClipVariant(selected.id, createTransformedVariant(selected, "Varied", clipDuplicateWithVariation(selected.notes)))}>+ Varied</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Variation Tools */}
+                {selected.notes.length > 0 && (
+                  <div className="sub-list">
+                    <div className="sub-list-header">
+                      <h4>Variation Tools</h4>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: "8px 0" }}>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipRhythmicVariation(selected.notes, 60) })}>Rhythmic Var</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipMelodicVariation(selected.notes, 2, key ?? undefined) })}>Melodic Var</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipThinNotes(selected.notes, 2) })}>Thin (½)</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipDensifyNotes(selected.notes, 2, 120) })}>Densify</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipAccentEveryN(selected.notes, 4, 20) })}>Accent ×4</button>
+                      {selected.lane === "drums" && (
+                        <>
+                          <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipAddGhostHits(selected.notes, 30, 60) })}>+ Ghost Hits</button>
+                          <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipRemoveGhostHits(selected.notes, 50) })}>− Ghost Hits</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Intensity Transforms */}
+                {selected.notes.length > 0 && (
+                  <div className="sub-list">
+                    <div className="sub-list-header">
+                      <h4>Intensity Variants</h4>
+                    </div>
+                    <div style={{ display: "flex", gap: 4, padding: "8px 0" }}>
+                      {INTENSITY_TIERS.map((tier) => (
+                        <button
+                          key={tier}
+                          className="btn btn-sm"
+                          onClick={() =>
+                            addClipVariant(
+                              selected.id,
+                              createTransformedVariant(
+                                selected,
+                                `${tier[0].toUpperCase()}${tier.slice(1)} Intensity`,
+                                clipDeriveIntensity(selected.notes, tier, key ?? undefined),
+                              ),
+                            )
+                          }
+                        >
+                          + {tier}
+                        </button>
+                      ))}
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipAddTension(selected.notes, 1) })}>+ Tension</button>
+                      <button className="btn btn-sm" onClick={() => updateClip(selected.id, { notes: clipBrighten(selected.notes, 15) })}>Brighten</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Chord / Bass Helpers */}
+                {key && (
+                  <div className="sub-list">
+                    <div className="sub-list-header">
+                      <h4>Chord &amp; Bass Helpers</h4>
+                    </div>
+                    <div style={{ padding: "8px 0" }}>
+                      <span className="text-dim" style={{ fontSize: 12 }}>Diatonic chords in key:</span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        {palette.map((p) => (
+                          <button
+                            key={p.degree}
+                            className="btn btn-sm"
+                            title={`${NOTE_NAMES[p.chord.root]} ${p.chord.quality}`}
+                            onClick={() => {
+                              const markers: ChordMarker[] = [{ tick: 0, chord: p.chord }];
+                              const padNotes = clipPadVoicing(markers, 4, 480 * selected.lengthBeats);
+                              updateClip(selected.id, { notes: [...selected.notes, ...padNotes] });
+                            }}
+                          >
+                            {p.numeral}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 8 }}>
+                        <button className="btn btn-sm" onClick={() => {
+                          const prog = progressionFromDegrees(key, [0, 3, 4, 0], 0, 480 * (selected.lengthBeats / 4));
+                          addClipVariant(selected.id, createTransformedVariant(selected, "I-IV-V-I Pad", clipPadVoicing(prog, 4, 480 * (selected.lengthBeats / 4))));
+                        }}>+ I-IV-V-I Pad</button>
+                        <button className="btn btn-sm" onClick={() => {
+                          const prog = progressionFromDegrees(key, [0, 5, 3, 4], 0, 480 * (selected.lengthBeats / 4));
+                          addClipVariant(selected.id, createTransformedVariant(selected, "I-vi-IV-V Pad", clipPadVoicing(prog, 4, 480 * (selected.lengthBeats / 4))));
+                        }}>+ I-vi-IV-V Pad</button>
+                        <button className="btn btn-sm" onClick={() => {
+                          const prog = progressionFromDegrees(key, [0, 3, 4, 0], 0, 480 * (selected.lengthBeats / 4));
+                          addClipVariant(selected.id, createTransformedVariant(selected, "Bass Line", clipBassLine(prog, 2, 480 * (selected.lengthBeats / 4))));
+                        }}>+ Bass Line</button>
+                        <button className="btn btn-sm" onClick={() => {
+                          const chord: Chord = palette[0]?.chord ?? { root: key.root, quality: "major" as const };
+                          addClipVariant(selected.id, createTransformedVariant(selected, "Arpeggio", clipArpeggiate(chord, 4, 0, 120, 480 * selected.lengthBeats)));
+                        }}>+ Arpeggio</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Variants */}
                 <div className="sub-list">

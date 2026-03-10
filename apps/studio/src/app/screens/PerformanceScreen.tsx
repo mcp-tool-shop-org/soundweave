@@ -5,6 +5,8 @@ import { useStudioStore } from "../store";
 import { usePlaybackStore } from "../playback-store";
 import { TransportStrip } from "../components/TransportStrip";
 import type { IntensityLevel, QuantizeMode } from "@soundweave/schema";
+import { clipKey } from "@soundweave/clip-engine";
+import { NOTE_NAMES } from "@soundweave/music-theory";
 
 const EMPTY_CLIPS: never[] = [];
 const QUANTIZE_MODES: QuantizeMode[] = ["none", "beat", "bar"];
@@ -200,6 +202,44 @@ export function PerformanceScreen() {
                   </div>
                 );
               })}
+          </div>
+        )}
+
+        {/* Clip Family View — shows how clips relate across the soundtrack */}
+        {clips.length > 0 && (
+          <div className="sub-list" style={{ marginTop: 16 }}>
+            <div className="sub-list-header">
+              <h4>Clip Families</h4>
+            </div>
+            <div style={{ padding: "8px 0" }}>
+              <span className="text-dim" style={{ fontSize: 12 }}>
+                Clips grouped by key — see how one musical idea evolves across scenes
+              </span>
+            </div>
+            {(() => {
+              const families = new Map<string, typeof clips>();
+              for (const clip of clips) {
+                const k = clipKey(clip);
+                const label = k ? `${NOTE_NAMES[k.root]} ${k.scale}` : "No key";
+                if (!families.has(label)) families.set(label, []);
+                families.get(label)!.push(clip);
+              }
+              return [...families.entries()].map(([label, group]) => (
+                <div key={label} style={{ marginBottom: 8 }}>
+                  <span className="badge badge-category">{label}</span>
+                  <span className="text-dim" style={{ marginLeft: 4, fontSize: 11 }}>
+                    {group.length} clip{group.length > 1 ? "s" : ""}
+                  </span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                    {group.map((c) => (
+                      <span key={c.id} className="badge" style={{ fontSize: 11 }}>
+                        {c.name} ({c.lane}) {(c.variants ?? []).length > 0 ? `· ${(c.variants ?? []).length} var` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
 

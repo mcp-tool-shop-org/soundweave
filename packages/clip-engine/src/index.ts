@@ -8,3 +8,35 @@ export { scheduleNotes, clipLengthSeconds, quantizedLaunchTime } from "./schedul
 export type { ScheduledNote } from "./scheduler.js";
 export type { ClipPlaybackHandle, ClipPlaybackState } from "./types.js";
 export { TICKS_PER_BEAT, TICKS_PER_16TH, TICKS_PER_8TH } from "./types.js";
+
+// Composition tools (wraps @soundweave/music-theory for Clip objects)
+export {
+  clipKey,
+  clipTranspose,
+  clipTransposeInKey,
+  clipInvert,
+  clipReverse,
+  clipOctaveShift,
+  clipRhythmScale,
+  clipDuplicateWithVariation,
+  clipTransposeAndSnap,
+  clipSnapToScale,
+  clipFindOutOfScale,
+  clipRhythmicVariation,
+  clipMelodicVariation,
+  clipThinNotes,
+  clipDensifyNotes,
+  clipAccentEveryN,
+  clipAddGhostHits,
+  clipRemoveGhostHits,
+  clipDeriveIntensity,
+  clipAddTension,
+  clipBrighten,
+  clipPadVoicing,
+  clipBassLine,
+  clipArpeggiate,
+  createTransformedVariant,
+  chordPalette,
+  diatonicChords,
+  progressionFromDegrees,
+} from "./clip-transforms.js";

@@ -9,6 +9,7 @@
   "include": ["src"],
   "references": [
     { "path": "../schema" },
-    { "path": "../instrument-rack" }
+    { "path": "../instrument-rack" },
+    { "path": "../music-theory" }
   ]
 }

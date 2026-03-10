@@ -16,6 +16,7 @@
     "@soundweave/audio-engine": "workspace:*",
     "@soundweave/clip-engine": "workspace:*",
     "@soundweave/instrument-rack": "workspace:*",
+    "@soundweave/music-theory": "workspace:*",
     "@soundweave/playback-engine": "workspace:*",
     "@soundweave/review": "workspace:*",
     "@soundweave/runtime-pack": "workspace:*",
