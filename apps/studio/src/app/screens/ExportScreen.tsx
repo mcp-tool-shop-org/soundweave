@@ -2,19 +2,34 @@
 
 import { useMemo, useState } from "react";
 import { useStudioStore } from "../store";
+import { usePlaybackStore } from "../playback-store";
 import { useReview } from "../hooks";
 import {
   exportRuntimePack,
   serializeRuntimePack,
   roundTripRuntimePack,
 } from "@soundweave/runtime-pack";
+import { encodeWav, type RenderPreset } from "@soundweave/playback-engine";
 
 type ExportStatus = "ready" | "warnings" | "blocked";
+
+const RENDER_PRESETS: { value: RenderPreset; label: string; desc: string }[] = [
+  { value: "full-cue", label: "Full Cue", desc: "Render entire scene with all stems" },
+  { value: "loop-only", label: "Loop Only", desc: "Render looping stems for specified duration" },
+  { value: "preview-sequence", label: "Preview", desc: "Short preview render (10s)" },
+];
 
 export function ExportScreen() {
   const pack = useStudioStore((s) => s.pack);
   const { summary, audit } = useReview();
   const [copied, setCopied] = useState(false);
+  const [renderPreset, setRenderPreset] = useState<RenderPreset>("full-cue");
+  const [renderDuration, setRenderDuration] = useState(30);
+  const [renderSceneId, setRenderSceneId] = useState<string>("");
+
+  const { renderStatus, lastRenderResult, renderScene } = usePlaybackStore();
+
+  const scenes = pack.scenes;
 
   const status: ExportStatus = useMemo(() => {
     if (audit.errors.length > 0) return "blocked";
@@ -154,6 +169,128 @@ export function ExportScreen() {
           >
             Download .json
           </button>
+        </div>
+
+        {/* Audio render section */}
+        <div className="sub-list" style={{ marginTop: 24 }}>
+          <div className="sub-list-header">
+            <h4>Audio Render</h4>
+          </div>
+          <p className="text-dim" style={{ fontSize: 12, margin: "4px 0 12px" }}>
+            Render a scene to WAV using OfflineAudioContext
+          </p>
+
+          <div className="field-row">
+            <div className="field-group">
+              <label className="field-label">Scene</label>
+              <select
+                value={renderSceneId}
+                onChange={(e) => setRenderSceneId(e.target.value)}
+                style={{ minWidth: 160 }}
+              >
+                <option value="">Select scene…</option>
+                {scenes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field-group">
+              <label className="field-label">Preset</label>
+              <select
+                value={renderPreset}
+                onChange={(e) => setRenderPreset(e.target.value as RenderPreset)}
+              >
+                {RENDER_PRESETS.map((p) => (
+                  <option key={p.value} value={p.value}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {(renderPreset === "loop-only" || renderPreset === "preview-sequence") && (
+              <div className="field-group">
+                <label className="field-label">Duration (s)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={300}
+                  value={renderPreset === "preview-sequence" ? 10 : renderDuration}
+                  onChange={(e) => setRenderDuration(Number(e.target.value))}
+                  disabled={renderPreset === "preview-sequence"}
+                  style={{ width: 80 }}
+                />
+              </div>
+            )}
+          </div>
+
+          <p className="text-dim" style={{ fontSize: 11, margin: "4px 0" }}>
+            {RENDER_PRESETS.find((p) => p.value === renderPreset)?.desc}
+          </p>
+
+          <div className="export-actions" style={{ marginTop: 8 }}>
+            <button
+              className="btn btn-primary"
+              disabled={!renderSceneId || renderStatus === "rendering"}
+              onClick={() => {
+                const dur =
+                  renderPreset === "preview-sequence"
+                    ? 10
+                    : renderPreset === "loop-only"
+                      ? renderDuration
+                      : undefined;
+                renderScene(pack, {
+                  preset: renderPreset,
+                  sceneId: renderSceneId,
+                  durationSeconds: dur,
+                });
+              }}
+            >
+              {renderStatus === "rendering" ? "Rendering…" : "Render WAV"}
+            </button>
+            {lastRenderResult && renderStatus === "done" && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  const blob = encodeWav(lastRenderResult.buffer);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `${renderSceneId || "render"}.wav`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Download WAV
+              </button>
+            )}
+          </div>
+
+          {renderStatus === "done" && lastRenderResult && (
+            <div className="stats-grid" style={{ marginTop: 12 }}>
+              <div className="stat-card">
+                <div className="stat-value">
+                  {lastRenderResult.durationSeconds.toFixed(1)}s
+                </div>
+                <div className="stat-label">Duration</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{lastRenderResult.sampleRate}</div>
+                <div className="stat-label">Sample Rate</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{lastRenderResult.channels}</div>
+                <div className="stat-label">Channels</div>
+              </div>
+            </div>
+          )}
+
+          {renderStatus === "error" && (
+            <div className="finding-item error" style={{ marginTop: 8 }}>
+              Render failed — check console for details
+            </div>
+          )}
         </div>
 
         {/* JSON preview */}

@@ -17,21 +17,24 @@ function createMockAudioBuffer(): AudioBuffer {
   } as unknown as AudioBuffer;
 }
 
-function createMockGainNode(): GainNode {
-  const gain = {
-    value: 1,
+function createMockAudioParam(defaultValue = 1) {
+  return {
+    value: defaultValue,
     setValueAtTime: vi.fn(),
     linearRampToValueAtTime: vi.fn(),
     exponentialRampToValueAtTime: vi.fn(),
     setTargetAtTime: vi.fn(),
     cancelScheduledValues: vi.fn(),
-    defaultValue: 1,
+    defaultValue,
     minValue: -3.4028235e38,
     maxValue: 3.4028235e38,
     automationRate: "a-rate" as AudioParam["automationRate"],
   };
+}
+
+function createMockGainNode(): GainNode {
   return {
-    gain,
+    gain: createMockAudioParam(1),
     connect: vi.fn(),
     disconnect: vi.fn(),
     context: null,
@@ -44,6 +47,102 @@ function createMockGainNode(): GainNode {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   } as unknown as GainNode;
+}
+
+function createMockStereoPanner(): StereoPannerNode {
+  return {
+    pan: createMockAudioParam(0),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as StereoPannerNode;
+}
+
+function createMockBiquadFilter(): BiquadFilterNode {
+  return {
+    type: "peaking",
+    frequency: createMockAudioParam(1000),
+    Q: createMockAudioParam(1),
+    gain: createMockAudioParam(0),
+    detune: createMockAudioParam(0),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    getFrequencyResponse: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as BiquadFilterNode;
+}
+
+function createMockDelay(): DelayNode {
+  return {
+    delayTime: createMockAudioParam(0),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as DelayNode;
+}
+
+function createMockConvolver(): ConvolverNode {
+  return {
+    buffer: null,
+    normalize: true,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as ConvolverNode;
+}
+
+function createMockDynamicsCompressor(): DynamicsCompressorNode {
+  return {
+    threshold: createMockAudioParam(-24),
+    ratio: createMockAudioParam(12),
+    attack: createMockAudioParam(0.003),
+    release: createMockAudioParam(0.25),
+    knee: createMockAudioParam(30),
+    reduction: 0,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as DynamicsCompressorNode;
 }
 
 function createMockBufferSource(): AudioBufferSourceNode {
@@ -75,11 +174,26 @@ function createMockAudioContext(): AudioContext {
   return {
     currentTime: 0,
     state: "running",
+    sampleRate: 44100,
     destination: {} as AudioDestinationNode,
     resume: vi.fn(() => Promise.resolve()),
     close: vi.fn(() => Promise.resolve()),
     createGain: vi.fn(() => createMockGainNode()),
     createBufferSource: vi.fn(() => createMockBufferSource()),
+    createStereoPanner: vi.fn(() => createMockStereoPanner()),
+    createBiquadFilter: vi.fn(() => createMockBiquadFilter()),
+    createDelay: vi.fn(() => createMockDelay()),
+    createConvolver: vi.fn(() => createMockConvolver()),
+    createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressor()),
+    createBuffer: vi.fn(
+      (channels: number, length: number, sampleRate: number) => {
+        const buf = createMockAudioBuffer();
+        Object.defineProperty(buf, "numberOfChannels", { value: channels });
+        Object.defineProperty(buf, "length", { value: length });
+        Object.defineProperty(buf, "sampleRate", { value: sampleRate });
+        return buf;
+      },
+    ),
     decodeAudioData: vi.fn(() => Promise.resolve(createMockAudioBuffer())),
   } as unknown as AudioContext;
 }
@@ -357,5 +471,280 @@ describe("Transport", () => {
     t.setMuted("stem-explore-base", true);
     t.setSolo("stem-explore-base", true);
     t.setGain("stem-explore-base", -3);
+  });
+
+  it("pan/bus delegates to scene player through mixer", async () => {
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    await t.playScene(pack, "scene-exploration");
+    // These should not throw
+    t.setPan("stem-explore-base", -0.5);
+    t.setStemBus("stem-explore-base", "drums");
+    t.setMasterGain(-3);
+  });
+
+  it("getMixerSnapshot returns mixer state", async () => {
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    await t.playScene(pack, "scene-exploration");
+    const snap = t.getMixerSnapshot();
+    expect(snap).toBeDefined();
+    expect(snap!.buses).toHaveLength(3);
+    expect(snap!.buses.map((b) => b.id)).toEqual(["drums", "music", "master"]);
+    expect(snap!.stems.length).toBeGreaterThan(0);
+  });
+
+  it("addFxSlot and removeFxSlot modify bus FX", async () => {
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    t.ensureContext();
+
+    // Master bus starts with default compressor
+    let snap = t.getMixerSnapshot()!;
+    const masterSlots = snap.buses.find((b) => b.id === "master")!.fxSlots;
+    expect(masterSlots.length).toBeGreaterThanOrEqual(1);
+
+    // Add EQ to drums bus
+    t.addFxSlot("drums", "eq");
+    snap = t.getMixerSnapshot()!;
+    const drumsFx = snap.buses.find((b) => b.id === "drums")!.fxSlots;
+    expect(drumsFx).toHaveLength(1);
+    expect(drumsFx[0].type).toBe("eq");
+
+    // Remove it
+    t.removeFxSlot("drums", 0);
+    snap = t.getMixerSnapshot()!;
+    expect(snap.buses.find((b) => b.id === "drums")!.fxSlots).toHaveLength(0);
+  });
+
+  it("setBusGain and setBusMuted update bus state", async () => {
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    t.ensureContext();
+
+    t.setBusGain("music", -6);
+    t.setBusMuted("drums", true);
+
+    const snap = t.getMixerSnapshot()!;
+    expect(snap.buses.find((b) => b.id === "music")!.gainDb).toBe(-6);
+    expect(snap.buses.find((b) => b.id === "drums")!.muted).toBe(true);
+  });
+
+  it("setFxBypassed toggles FX bypass", async () => {
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    t.ensureContext();
+
+    t.addFxSlot("music", "delay");
+    t.setFxBypassed("music", 0, true);
+
+    const snap = t.getMixerSnapshot()!;
+    expect(snap.buses.find((b) => b.id === "music")!.fxSlots[0].bypassed).toBe(
+      true,
+    );
+  });
+});
+
+describe("Mixer", () => {
+  let ctx: AudioContext;
+
+  beforeEach(() => {
+    ctx = createMockAudioContext();
+  });
+
+  it("creates with 3 buses and a default compressor on master", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const snap = mixer.getSnapshot();
+
+    expect(snap.buses).toHaveLength(3);
+    expect(snap.buses.map((b) => b.id)).toEqual(["drums", "music", "master"]);
+    // Master has default compressor
+    expect(snap.buses[2].fxSlots).toHaveLength(1);
+    expect(snap.buses[2].fxSlots[0].type).toBe("compressor");
+  });
+
+  it("connects and disconnects stems with pan", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+
+    const panNode = mixer.connectStem("stem-1", gainNode, "music", 0.5);
+    expect(panNode).toBeDefined();
+    expect(mixer.getPan("stem-1")).toBe(0.5);
+    expect(mixer.getStemBus("stem-1")).toBe("music");
+
+    const snap = mixer.getSnapshot();
+    expect(snap.stems).toHaveLength(1);
+    expect(snap.stems[0].stemId).toBe("stem-1");
+
+    mixer.disconnectStem("stem-1");
+    expect(mixer.getSnapshot().stems).toHaveLength(0);
+  });
+
+  it("setPan clamps value to [-1, 1]", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+
+    mixer.setPan("stem-1", 2.5);
+    expect(mixer.getPan("stem-1")).toBe(1);
+
+    mixer.setPan("stem-1", -3);
+    expect(mixer.getPan("stem-1")).toBe(-1);
+  });
+
+  it("setStemBus changes bus assignment", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode, "music");
+    expect(mixer.getStemBus("stem-1")).toBe("music");
+
+    mixer.setStemBus("stem-1", "drums");
+    expect(mixer.getStemBus("stem-1")).toBe("drums");
+  });
+
+  it("setMasterGain updates master gain", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+
+    mixer.setMasterGain(-6);
+    expect(mixer.getMasterGainDb()).toBe(-6);
+  });
+
+  it("adds and removes FX slots", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+
+    mixer.addFxSlot("drums", "eq");
+    mixer.addFxSlot("drums", "delay");
+    expect(mixer.getSnapshot().buses[0].fxSlots).toHaveLength(2);
+
+    mixer.removeFxSlot("drums", 0);
+    expect(mixer.getSnapshot().buses[0].fxSlots).toHaveLength(1);
+    expect(mixer.getSnapshot().buses[0].fxSlots[0].type).toBe("delay");
+  });
+
+  it("setBusMuted and setBusGain work", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+
+    mixer.setBusGain("music", -12);
+    mixer.setBusMuted("music", true);
+
+    const bus = mixer.getSnapshot().buses.find((b) => b.id === "music")!;
+    expect(bus.gainDb).toBe(-12);
+    expect(bus.muted).toBe(true);
+  });
+
+  it("dispose cleans up", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+    mixer.addFxSlot("drums", "reverb");
+
+    mixer.dispose();
+    expect(mixer.getSnapshot().stems).toHaveLength(0);
+  });
+});
+
+describe("FX factory", () => {
+  let ctx: AudioContext;
+
+  beforeEach(() => {
+    ctx = createMockAudioContext();
+  });
+
+  it("creates EQ nodes", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_EQ_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "eq", { ...DEFAULT_EQ_PARAMS });
+    expect(fx.type).toBe("eq");
+    expect(fx.input).toBeDefined();
+    expect(fx.output).toBeDefined();
+  });
+
+  it("creates delay nodes", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_DELAY_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "delay", { ...DEFAULT_DELAY_PARAMS });
+    expect(fx.type).toBe("delay");
+    expect(fx.nodes.length).toBeGreaterThan(1);
+  });
+
+  it("creates reverb nodes", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_REVERB_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "reverb", { ...DEFAULT_REVERB_PARAMS });
+    expect(fx.type).toBe("reverb");
+  });
+
+  it("creates compressor nodes", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_COMPRESSOR_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "compressor", {
+      ...DEFAULT_COMPRESSOR_PARAMS,
+    });
+    expect(fx.type).toBe("compressor");
+  });
+
+  it("update modifies FX parameters", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_EQ_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "eq", { ...DEFAULT_EQ_PARAMS });
+    // Should not throw
+    fx.update({ ...DEFAULT_EQ_PARAMS, frequency: 2000, gain: 3 });
+  });
+
+  it("disposeFxNodes disconnects all nodes", async () => {
+    const { createFxNodes, disposeFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_DELAY_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "delay", { ...DEFAULT_DELAY_PARAMS });
+    // Should not throw
+    disposeFxNodes(fx);
+  });
+});
+
+describe("mixer-types", () => {
+  it("defaultParamsForFx returns correct defaults", async () => {
+    const { defaultParamsForFx } = await import("../src/mixer-types.js");
+    const eq = defaultParamsForFx("eq");
+    expect(eq).toHaveProperty("frequency");
+
+    const delay = defaultParamsForFx("delay");
+    expect(delay).toHaveProperty("delayTime");
+
+    const reverb = defaultParamsForFx("reverb");
+    expect(reverb).toHaveProperty("decayTime");
+
+    const comp = defaultParamsForFx("compressor");
+    expect(comp).toHaveProperty("threshold");
+  });
+});
+
+describe("encodeWav", () => {
+  it("encodes an AudioBuffer to a WAV blob", async () => {
+    const { encodeWav } = await import("../src/renderer.js");
+    const buffer = createMockAudioBuffer();
+    // Provide real channel data for encoding
+    const realData = new Float32Array(100);
+    for (let i = 0; i < 100; i++) realData[i] = Math.sin(i * 0.1) * 0.5;
+    vi.mocked(buffer.getChannelData).mockReturnValue(realData);
+    Object.defineProperty(buffer, "length", { value: 100 });
+    Object.defineProperty(buffer, "numberOfChannels", { value: 2 });
+    Object.defineProperty(buffer, "sampleRate", { value: 44100 });
+
+    const blob = encodeWav(buffer);
+    expect(blob).toBeInstanceOf(Blob);
+    expect(blob.type).toBe("audio/wav");
+    // WAV header (44 bytes) + data (100 samples × 2 channels × 2 bytes)
+    expect(blob.size).toBe(44 + 100 * 2 * 2);
   });
 });

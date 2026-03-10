@@ -10,10 +10,20 @@ import type {
   PlaybackEvent,
   SequencePlaybackState,
 } from "./types.js";
+import type {
+  BusId,
+  FxType,
+  FxParams,
+  MixerSnapshot,
+  RenderOptions,
+  RenderResult,
+} from "./mixer-types.js";
 import { AssetLoader } from "./loader.js";
 import { ScenePlayer } from "./scene-player.js";
-import { TransitionPlayer } from "./transition-player.js";
+import { TransitionPlayer, type TransitionOptions } from "./transition-player.js";
 import { SequencePlayer } from "./sequence-player.js";
+import { Mixer } from "./mixer.js";
+import { CueRenderer, encodeWav } from "./renderer.js";
 
 /**
  * Top-level playback transport.
@@ -27,6 +37,8 @@ export class Transport {
   private scenePlayer: ScenePlayer | null = null;
   private transitionPlayer: TransitionPlayer | null = null;
   private sequencePlayer: SequencePlayer | null = null;
+  private mixer: Mixer | null = null;
+  private renderer: CueRenderer | null = null;
   private state: TransportState = "stopped";
   private listeners = new Set<PlaybackListener>();
   private errorMessage: string | null = null;
@@ -37,15 +49,24 @@ export class Transport {
       this.ctx = new AudioContext();
       this.loader = new AssetLoader(this.ctx);
       this.scenePlayer = new ScenePlayer(this.ctx, this.loader);
+
+      // Create mixer and wire into scene player
+      this.mixer = new Mixer(this.ctx, this.ctx.destination);
+      this.scenePlayer.setMixer(this.mixer);
+
       this.transitionPlayer = new TransitionPlayer(
         this.ctx,
         this.scenePlayer,
         this.loader,
       );
+      this.transitionPlayer.setMixer(this.mixer);
+
       this.sequencePlayer = new SequencePlayer(
         this.scenePlayer,
         this.transitionPlayer,
       );
+
+      this.renderer = new CueRenderer(this.ctx, this.loader);
 
       // Wire internal events to transport listeners
       const relay = (evt: PlaybackEvent) => this.emit(evt.type, evt.detail);
@@ -80,7 +101,7 @@ export class Transport {
   async switchScene(
     pack: SoundtrackPack,
     toSceneId: string,
-    options?: { immediate?: boolean },
+    options?: TransitionOptions,
   ): Promise<void> {
     try {
       this.ensureContext();
@@ -131,6 +152,74 @@ export class Transport {
     this.scenePlayer?.setGain(stemId, gainDb);
   }
 
+  /** Set pan on a stem (-1 left to +1 right) */
+  setPan(stemId: string, pan: number): void {
+    this.scenePlayer?.setPan(stemId, pan);
+  }
+
+  /** Set bus assignment for a stem */
+  setStemBus(stemId: string, bus: BusId): void {
+    this.scenePlayer?.setStemBus(stemId, bus);
+  }
+
+  /** Set master gain in dB */
+  setMasterGain(gainDb: number): void {
+    this.mixer?.setMasterGain(gainDb);
+  }
+
+  /** Set bus gain in dB */
+  setBusGain(busId: BusId, gainDb: number): void {
+    this.mixer?.setBusGain(busId, gainDb);
+  }
+
+  /** Mute/unmute a bus */
+  setBusMuted(busId: BusId, muted: boolean): void {
+    this.mixer?.setBusMuted(busId, muted);
+  }
+
+  /** Add an FX slot to a bus */
+  addFxSlot(busId: BusId, type: FxType): void {
+    this.mixer?.addFxSlot(busId, type);
+  }
+
+  /** Remove an FX slot from a bus */
+  removeFxSlot(busId: BusId, slotIndex: number): void {
+    this.mixer?.removeFxSlot(busId, slotIndex);
+  }
+
+  /** Update FX slot parameters */
+  updateFxSlot(busId: BusId, slotIndex: number, params: FxParams): void {
+    this.mixer?.updateFxSlot(busId, slotIndex, params);
+  }
+
+  /** Bypass/enable an FX slot */
+  setFxBypassed(busId: BusId, slotIndex: number, bypassed: boolean): void {
+    this.mixer?.setFxBypassed(busId, slotIndex, bypassed);
+  }
+
+  /** Get mixer snapshot */
+  getMixerSnapshot(): MixerSnapshot | null {
+    return this.mixer?.getSnapshot() ?? null;
+  }
+
+  /** Render a scene to an AudioBuffer */
+  async renderScene(
+    pack: SoundtrackPack,
+    options: RenderOptions,
+  ): Promise<RenderResult> {
+    this.ensureContext();
+    return this.renderer!.render(pack, options);
+  }
+
+  /** Render a scene to a WAV Blob */
+  async renderToWav(
+    pack: SoundtrackPack,
+    options: RenderOptions,
+  ): Promise<Blob> {
+    const result = await this.renderScene(pack, options);
+    return encodeWav(result.buffer);
+  }
+
   /** Subscribe to events */
   on(listener: PlaybackListener): () => void {
     this.listeners.add(listener);
@@ -163,6 +252,7 @@ export class Transport {
   /** Dispose all resources */
   dispose(): void {
     this.stop();
+    this.mixer?.dispose();
     this.loader?.clear();
     if (this.ctx && this.ctx.state !== "closed") {
       void this.ctx.close();
@@ -172,6 +262,8 @@ export class Transport {
     this.scenePlayer = null;
     this.transitionPlayer = null;
     this.sequencePlayer = null;
+    this.mixer = null;
+    this.renderer = null;
     this.listeners.clear();
   }
 

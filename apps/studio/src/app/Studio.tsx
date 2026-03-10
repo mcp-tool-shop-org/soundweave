@@ -14,6 +14,7 @@ import {
   ReviewScreen,
   PreviewScreen,
   PerformanceScreen,
+  MixerScreen,
   ExportScreen,
 } from "./screens";
 import { starterPack } from "./seed-data";
@@ -41,6 +42,8 @@ function ScreenRouter() {
       return <PreviewScreen />;
     case "performance":
       return <PerformanceScreen />;
+    case "mixer":
+      return <MixerScreen />;
     case "export":
       return <ExportScreen />;
   }

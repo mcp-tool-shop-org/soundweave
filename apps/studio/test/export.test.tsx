@@ -196,8 +196,8 @@ describe("Example pack switching", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
     expect(useStudioStore.getState().section).toBe("export");
 
-    // Switch pack
-    const select = screen.getByRole("combobox");
+    // Switch pack (first combobox is the sidebar pack switcher)
+    const select = screen.getAllByRole("combobox")[0];
     fireEvent.change(select, { target: { value: "minimal-pack" } });
     expect(useStudioStore.getState().section).toBe("project");
   });

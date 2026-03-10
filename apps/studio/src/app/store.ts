@@ -30,6 +30,7 @@ export type Section =
   | "review"
   | "preview"
   | "performance"
+  | "mixer"
   | "export";
 
 // ── Store shape ──

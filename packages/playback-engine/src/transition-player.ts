@@ -1,5 +1,6 @@
 // ────────────────────────────────────────────
 // Transition player — crossfade, stinger-then-switch, immediate
+// Supports exponential + linear fade curves and stinger level control
 // ────────────────────────────────────────────
 
 import type { SoundtrackPack, TransitionRule } from "@soundweave/schema";
@@ -7,6 +8,17 @@ import { findTransitionRule } from "@soundweave/audio-engine";
 import type { PlaybackListener, PlaybackEventType } from "./types.js";
 import type { ScenePlayer } from "./scene-player.js";
 import type { AssetLoader } from "./loader.js";
+import type { Mixer } from "./mixer.js";
+
+/** Fade curve style */
+export type FadeCurve = "linear" | "exponential";
+
+/** Options for transition polish */
+export interface TransitionOptions {
+  immediate?: boolean;
+  fadeCurve?: FadeCurve;
+  stingerGainDb?: number;
+}
 
 export class TransitionPlayer {
   private ctx: AudioContext;
@@ -14,6 +26,7 @@ export class TransitionPlayer {
   private loader: AssetLoader;
   private listener: PlaybackListener | null = null;
   private transitioning = false;
+  private mixer: Mixer | null = null;
 
   constructor(
     ctx: AudioContext,
@@ -29,6 +42,11 @@ export class TransitionPlayer {
     this.listener = listener;
   }
 
+  /** Attach a mixer (for routing stingers through the master bus) */
+  setMixer(mixer: Mixer): void {
+    this.mixer = mixer;
+  }
+
   get isTransitioning(): boolean {
     return this.transitioning;
   }
@@ -40,7 +58,7 @@ export class TransitionPlayer {
   async switchScene(
     pack: SoundtrackPack,
     toSceneId: string,
-    options?: { immediate?: boolean },
+    options?: TransitionOptions,
   ): Promise<void> {
     const fromSceneId = this.scenePlayer.sceneId;
 
@@ -58,12 +76,18 @@ export class TransitionPlayer {
 
     this.transitioning = true;
     try {
+      const fadeCurve = options?.fadeCurve ?? "exponential";
       switch (rule.mode) {
         case "crossfade":
-          await this.crossfade(pack, toSceneId, rule);
+          await this.crossfade(pack, toSceneId, rule, fadeCurve);
           break;
         case "stinger-then-switch":
-          await this.stingerThenSwitch(pack, toSceneId, rule);
+          await this.stingerThenSwitch(
+            pack,
+            toSceneId,
+            rule,
+            options?.stingerGainDb ?? 0,
+          );
           break;
         case "immediate":
         default:
@@ -79,15 +103,25 @@ export class TransitionPlayer {
     pack: SoundtrackPack,
     toSceneId: string,
     rule: TransitionRule,
+    fadeCurve: FadeCurve,
   ): Promise<void> {
     const durationMs = rule.durationMs ?? 1000;
     const durationS = durationMs / 1000;
     const now = this.ctx.currentTime;
 
-    // Fade out current scene's master gain
-    const masterGain = this.scenePlayer.getMasterGain();
+    // Get the gain node to ramp: mixer master or scene-player master
+    const masterGain = this.mixer
+      ? this.mixer.getMasterGain()
+      : this.scenePlayer.getMasterGain();
+
+    // Fade out using selected curve
     masterGain.gain.setValueAtTime(masterGain.gain.value, now);
-    masterGain.gain.linearRampToValueAtTime(0, now + durationS);
+    if (fadeCurve === "exponential") {
+      // exponentialRamp needs a non-zero target; use near-zero
+      masterGain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
+    } else {
+      masterGain.gain.linearRampToValueAtTime(0, now + durationS);
+    }
 
     // Wait half the fade, then start new scene
     await sleep(durationMs / 2);
@@ -96,9 +130,22 @@ export class TransitionPlayer {
     await this.scenePlayer.playScene(pack, toSceneId);
 
     // Fade in new scene
-    const newMasterGain = this.scenePlayer.getMasterGain();
-    newMasterGain.gain.setValueAtTime(0, this.ctx.currentTime);
-    newMasterGain.gain.linearRampToValueAtTime(1, this.ctx.currentTime + durationS / 2);
+    const newMasterGain = this.mixer
+      ? this.mixer.getMasterGain()
+      : this.scenePlayer.getMasterGain();
+    const fadeInStart = this.ctx.currentTime;
+    newMasterGain.gain.setValueAtTime(0.0001, fadeInStart);
+    if (fadeCurve === "exponential") {
+      newMasterGain.gain.exponentialRampToValueAtTime(
+        1,
+        fadeInStart + durationS / 2,
+      );
+    } else {
+      newMasterGain.gain.linearRampToValueAtTime(
+        1,
+        fadeInStart + durationS / 2,
+      );
+    }
 
     await sleep(durationMs / 2);
   }
@@ -107,34 +154,41 @@ export class TransitionPlayer {
     pack: SoundtrackPack,
     toSceneId: string,
     rule: TransitionRule,
+    stingerGainDb: number,
   ): Promise<void> {
     if (!rule.stingerAssetId) {
-      // No stinger → fall back to immediate
       await this.scenePlayer.playScene(pack, toSceneId);
       return;
     }
 
-    const buffer = await this.loader.loadStingerAsset(pack, rule.stingerAssetId);
+    const buffer = await this.loader.loadStingerAsset(
+      pack,
+      rule.stingerAssetId,
+    );
     if (!buffer) {
       await this.scenePlayer.playScene(pack, toSceneId);
       return;
     }
 
-    // Play stinger through a temporary gain node
+    // Play stinger through the mixer's master bus if available, else destination
     const stingerGain = this.ctx.createGain();
-    stingerGain.connect(this.ctx.destination);
+    stingerGain.gain.value = dbToLinear(stingerGainDb);
+    if (this.mixer) {
+      stingerGain.connect(this.mixer.getMasterGain());
+    } else {
+      stingerGain.connect(this.ctx.destination);
+    }
+
     const stingerSource = this.ctx.createBufferSource();
     stingerSource.buffer = buffer;
     stingerSource.connect(stingerGain);
     stingerSource.start(0);
 
-    // Wait for stinger to finish (or use durationMs if shorter)
     const waitMs = rule.durationMs ?? buffer.duration * 1000;
     await sleep(waitMs);
 
     stingerGain.disconnect();
 
-    // Then switch to new scene
     await this.scenePlayer.playScene(pack, toSceneId);
   }
 
@@ -145,4 +199,8 @@ export class TransitionPlayer {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function dbToLinear(db: number): number {
+  return Math.pow(10, db / 20);
 }

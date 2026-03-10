@@ -8,4 +8,5 @@ export { TransitionsScreen } from "./TransitionsScreen";
 export { ReviewScreen } from "./ReviewScreen";
 export { PreviewScreen } from "./PreviewScreen";
 export { PerformanceScreen } from "./PerformanceScreen";
+export { MixerScreen } from "./MixerScreen";
 export { ExportScreen } from "./ExportScreen";

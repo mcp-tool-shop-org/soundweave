@@ -6,6 +6,8 @@ import type { SoundtrackPack } from "@soundweave/schema";
 import { resolveActiveLayers } from "@soundweave/audio-engine";
 import type { StemHandle, PlaybackListener, PlaybackEventType } from "./types.js";
 import type { AssetLoader } from "./loader.js";
+import type { Mixer } from "./mixer.js";
+import type { BusId } from "./mixer-types.js";
 
 export class ScenePlayer {
   private ctx: AudioContext;
@@ -15,12 +17,23 @@ export class ScenePlayer {
   private currentSceneId: string | null = null;
   private soloActive = false;
   private listener: PlaybackListener | null = null;
+  private mixer: Mixer | null = null;
 
   constructor(ctx: AudioContext, loader: AssetLoader) {
     this.ctx = ctx;
     this.loader = loader;
     this.masterGain = ctx.createGain();
     this.masterGain.connect(ctx.destination);
+  }
+
+  /** Attach a mixer for bus routing and pan. Call before playScene. */
+  setMixer(mixer: Mixer): void {
+    this.mixer = mixer;
+    // Rewire masterGain through mixer
+    this.masterGain.disconnect();
+    // The mixer's getMasterGain already connects to ctx.destination,
+    // so we don't need the scene-player's masterGain when mixer is active.
+    // Instead, the mixer handles the final routing.
   }
 
   setListener(listener: PlaybackListener): void {
@@ -76,7 +89,14 @@ export class ScenePlayer {
       const stemGainDb = layerRef?.gainDb ?? stem.gainDb ?? 0;
 
       gainNode.gain.value = stem.mutedByDefault ? 0 : dbToGain(stemGainDb);
-      gainNode.connect(this.masterGain);
+
+      // Route through mixer if available, otherwise direct to masterGain
+      if (this.mixer) {
+        const bus: BusId = stem.role === "accent" ? "drums" : "music";
+        this.mixer.connectStem(stemId, gainNode, bus);
+      } else {
+        gainNode.connect(this.masterGain);
+      }
 
       const source = this.ctx.createBufferSource();
       source.buffer = buffer;
@@ -125,6 +145,10 @@ export class ScenePlayer {
       }
       handle.gainNode.disconnect();
     }
+    // Disconnect mixer stem routes
+    if (this.mixer) {
+      this.mixer.disconnectAllStems();
+    }
     this.handles.clear();
     this.currentSceneId = null;
     this.soloActive = false;
@@ -155,6 +179,25 @@ export class ScenePlayer {
     if (!h) return;
     h.userGainDb = gainDb;
     this.updateEffectiveGains();
+    this.emit("stem-change");
+  }
+
+  /** Set pan for a stem (-1 left to +1 right) */
+  setPan(stemId: string, pan: number): void {
+    if (!this.mixer) return;
+    this.mixer.setPan(stemId, pan);
+    this.emit("stem-change");
+  }
+
+  /** Get pan for a stem */
+  getPan(stemId: string): number {
+    return this.mixer?.getPan(stemId) ?? 0;
+  }
+
+  /** Set bus assignment for a stem */
+  setStemBus(stemId: string, bus: BusId): void {
+    if (!this.mixer) return;
+    this.mixer.setStemBus(stemId, bus);
     this.emit("stem-change");
   }
 
