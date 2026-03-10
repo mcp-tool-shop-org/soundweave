@@ -3,6 +3,8 @@
 import { useStudioStore } from "../store";
 import type { Scene, SceneCategory } from "@soundweave/schema";
 
+const EMPTY_CLIPS: never[] = [];
+
 const SCENE_CATEGORIES: SceneCategory[] = [
   "exploration",
   "tension",
@@ -28,6 +30,7 @@ function newScene(n: number): Scene {
 export function ScenesScreen() {
   const scenes = useStudioStore((s) => s.pack.scenes);
   const stems = useStudioStore((s) => s.pack.stems);
+  const clips = useStudioStore((s) => s.pack.clips ?? EMPTY_CLIPS);
   const selectedId = useStudioStore((s) => s.selectedId);
   const setSelectedId = useStudioStore((s) => s.setSelectedId);
   const addScene = useStudioStore((s) => s.addScene);
@@ -36,6 +39,9 @@ export function ScenesScreen() {
   const addSceneLayer = useStudioStore((s) => s.addSceneLayer);
   const updateSceneLayer = useStudioStore((s) => s.updateSceneLayer);
   const removeSceneLayer = useStudioStore((s) => s.removeSceneLayer);
+  const addSceneClipLayer = useStudioStore((s) => s.addSceneClipLayer);
+  const updateSceneClipLayer = useStudioStore((s) => s.updateSceneClipLayer);
+  const removeSceneClipLayer = useStudioStore((s) => s.removeSceneClipLayer);
 
   const selected = scenes.find((s) => s.id === selectedId) ?? null;
 
@@ -267,6 +273,84 @@ export function ScenesScreen() {
                               style={{ margin: 0 }}
                             >
                               ⚠ Stem &quot;{layer.stemId}&quot; not found
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Clip Layers */}
+                <div className="sub-list">
+                  <div className="sub-list-header">
+                    <h4>Clip Layers ({(selected.clipLayers ?? []).length})</h4>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() =>
+                        addSceneClipLayer(selected.id, { clipId: "" })
+                      }
+                    >
+                      + Add Clip
+                    </button>
+                  </div>
+                  {(selected.clipLayers ?? []).length === 0 && (
+                    <div className="empty-state" style={{ padding: "8px 0" }}>
+                      <p style={{ fontSize: 13 }}>No clip layers — add clips from the Clips screen first</p>
+                    </div>
+                  )}
+                  {(selected.clipLayers ?? []).map((ref, i) => {
+                    const clipMissing =
+                      ref.clipId !== "" &&
+                      !clips.some((c) => c.id === ref.clipId);
+                    return (
+                      <div key={i} className="sub-list-item">
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <select
+                              className="field-input"
+                              style={{ flex: 1 }}
+                              value={ref.clipId}
+                              onChange={(e) =>
+                                updateSceneClipLayer(selected.id, i, {
+                                  clipId: e.target.value,
+                                })
+                              }
+                            >
+                              <option value="">— select clip —</option>
+                              {clips.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name || c.id} ({c.lane})
+                                </option>
+                              ))}
+                            </select>
+                            <label className="field-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={ref.mutedByDefault ?? false}
+                                onChange={(e) =>
+                                  updateSceneClipLayer(selected.id, i, {
+                                    mutedByDefault: e.target.checked || undefined,
+                                  })
+                                }
+                              />
+                              Muted
+                            </label>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() =>
+                                removeSceneClipLayer(selected.id, i)
+                              }
+                            >
+                              ×
+                            </button>
+                          </div>
+                          {clipMissing && (
+                            <div
+                              className="inline-warning warning"
+                              style={{ margin: 0 }}
+                            >
+                              ⚠ Clip &quot;{ref.clipId}&quot; not found
                             </div>
                           )}
                         </div>

@@ -8,6 +8,7 @@ import {
   AssetsScreen,
   StemsScreen,
   ScenesScreen,
+  ClipsScreen,
   BindingsScreen,
   TransitionsScreen,
   ReviewScreen,
@@ -27,6 +28,8 @@ function ScreenRouter() {
       return <StemsScreen />;
     case "scenes":
       return <ScenesScreen />;
+    case "clips":
+      return <ClipsScreen />;
     case "bindings":
       return <BindingsScreen />;
     case "transitions":

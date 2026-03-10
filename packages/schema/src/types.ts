@@ -79,6 +79,8 @@ export interface Scene {
   name: string;
   category: SceneCategory;
   layers: SceneLayerRef[];
+  /** Clips activated in this scene */
+  clipLayers?: SceneClipRef[];
   fallbackSceneId?: string;
   tags?: string[];
   notes?: string;
@@ -123,6 +125,70 @@ export interface TransitionRule {
   notes?: string;
 }
 
+// ── Instruments ──
+
+export type InstrumentCategory =
+  | "drums"
+  | "bass"
+  | "pad"
+  | "lead"
+  | "pulse";
+
+export interface InstrumentPreset {
+  id: string;
+  name: string;
+  category: InstrumentCategory;
+  /** Synth engine parameters (oscillator type, envelope, filter, etc.) */
+  params: Record<string, number | string | boolean>;
+}
+
+// ── Clips ──
+
+export type ClipLane = "drums" | "bass" | "harmony" | "motif" | "accent";
+
+/** A single note event in a clip */
+export interface ClipNote {
+  /** MIDI note number (0–127). For drums, maps to kit piece index. */
+  pitch: number;
+  /** Start time in ticks from clip start (1 beat = 480 ticks) */
+  startTick: number;
+  /** Duration in ticks */
+  durationTicks: number;
+  /** Velocity 0–127 */
+  velocity: number;
+}
+
+export interface Clip {
+  id: string;
+  name: string;
+  lane: ClipLane;
+  /** Which instrument preset this clip uses */
+  instrumentId: string;
+  /** BPM for playback timing */
+  bpm: number;
+  /** Length of the clip in beats */
+  lengthBeats: number;
+  /** Time signature numerator (default 4) */
+  timeSignature?: number;
+  /** Quantize grid: ticks per snap (120 = 16th, 240 = 8th, 480 = quarter) */
+  quantize?: number;
+  /** The note data */
+  notes: ClipNote[];
+  /** Loop this clip */
+  loop: boolean;
+  gainDb?: number;
+  tags?: string[];
+}
+
+/** Reference to a clip in a scene */
+export interface SceneClipRef {
+  clipId: string;
+  /** Override gain for this clip in this scene */
+  gainDb?: number;
+  /** Start muted (user can unmute live) */
+  mutedByDefault?: boolean;
+}
+
 // ── Pack ──
 
 export interface SoundtrackPack {
@@ -132,6 +198,10 @@ export interface SoundtrackPack {
   scenes: Scene[];
   bindings: TriggerBinding[];
   transitions: TransitionRule[];
+  /** Built-in instrument presets */
+  instruments?: InstrumentPreset[];
+  /** Composed clips */
+  clips?: Clip[];
 }
 
 // ── Runtime state ──

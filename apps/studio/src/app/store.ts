@@ -7,10 +7,13 @@ import type {
   Stem,
   Scene,
   SceneLayerRef,
+  SceneClipRef,
   TriggerBinding,
   TriggerCondition,
   TransitionRule,
   SoundtrackPackMeta,
+  Clip,
+  ClipNote,
 } from "@soundweave/schema";
 
 // ── Section type ──
@@ -20,6 +23,7 @@ export type Section =
   | "assets"
   | "stems"
   | "scenes"
+  | "clips"
   | "bindings"
   | "transitions"
   | "review"
@@ -87,6 +91,27 @@ export interface StudioState {
   addTransition: (transition: TransitionRule) => void;
   updateTransition: (id: string, partial: Partial<TransitionRule>) => void;
   deleteTransition: (id: string) => void;
+
+  // Clip CRUD
+  addClip: (clip: Clip) => void;
+  updateClip: (id: string, partial: Partial<Clip>) => void;
+  deleteClip: (id: string) => void;
+  addClipNote: (clipId: string, note: ClipNote) => void;
+  updateClipNote: (
+    clipId: string,
+    noteIndex: number,
+    partial: Partial<ClipNote>,
+  ) => void;
+  removeClipNote: (clipId: string, noteIndex: number) => void;
+
+  // Scene clip-layer CRUD
+  addSceneClipLayer: (sceneId: string, ref: SceneClipRef) => void;
+  updateSceneClipLayer: (
+    sceneId: string,
+    layerIndex: number,
+    partial: Partial<SceneClipRef>,
+  ) => void;
+  removeSceneClipLayer: (sceneId: string, layerIndex: number) => void;
 }
 
 // ── Default empty pack ──
@@ -336,4 +361,112 @@ export const useStudioStore = create<StudioState>((set) => ({
         selectedId: fixSelection(transitions, id, state.selectedId),
       };
     }),
+
+  // Clips
+  addClip: (clip) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: [...(state.pack.clips ?? []), clip],
+      },
+      selectedId: clip.id,
+    })),
+  updateClip: (id, partial) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === id ? { ...c, ...partial } : c,
+        ),
+      },
+    })),
+  deleteClip: (id) =>
+    set((state) => {
+      const clips = (state.pack.clips ?? []).filter((c) => c.id !== id);
+      return {
+        pack: { ...state.pack, clips },
+        selectedId: fixSelection(clips, id, state.selectedId),
+      };
+    }),
+  addClipNote: (clipId, note) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId ? { ...c, notes: [...c.notes, note] } : c,
+        ),
+      },
+    })),
+  updateClipNote: (clipId, noteIndex, partial) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId
+            ? {
+                ...c,
+                notes: c.notes.map((n, i) =>
+                  i === noteIndex ? { ...n, ...partial } : n,
+                ),
+              }
+            : c,
+        ),
+      },
+    })),
+  removeClipNote: (clipId, noteIndex) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        clips: (state.pack.clips ?? []).map((c) =>
+          c.id === clipId
+            ? { ...c, notes: c.notes.filter((_, i) => i !== noteIndex) }
+            : c,
+        ),
+      },
+    })),
+
+  // Scene clip layers
+  addSceneClipLayer: (sceneId, ref) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        scenes: state.pack.scenes.map((s) =>
+          s.id === sceneId
+            ? { ...s, clipLayers: [...(s.clipLayers ?? []), ref] }
+            : s,
+        ),
+      },
+    })),
+  updateSceneClipLayer: (sceneId, layerIndex, partial) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        scenes: state.pack.scenes.map((s) =>
+          s.id === sceneId
+            ? {
+                ...s,
+                clipLayers: (s.clipLayers ?? []).map((l, i) =>
+                  i === layerIndex ? { ...l, ...partial } : l,
+                ),
+              }
+            : s,
+        ),
+      },
+    })),
+  removeSceneClipLayer: (sceneId, layerIndex) =>
+    set((state) => ({
+      pack: {
+        ...state.pack,
+        scenes: state.pack.scenes.map((s) =>
+          s.id === sceneId
+            ? {
+                ...s,
+                clipLayers: (s.clipLayers ?? []).filter(
+                  (_, i) => i !== layerIndex,
+                ),
+              }
+            : s,
+        ),
+      },
+    })),
 }));

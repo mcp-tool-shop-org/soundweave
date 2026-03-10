@@ -9,6 +9,7 @@ const navItems: { section: Section; label: string }[] = [
   { section: "assets", label: "Assets" },
   { section: "stems", label: "Stems" },
   { section: "scenes", label: "Scenes" },
+  { section: "clips", label: "Clips" },
   { section: "bindings", label: "Bindings" },
   { section: "transitions", label: "Transitions" },
   { section: "review", label: "Review" },
