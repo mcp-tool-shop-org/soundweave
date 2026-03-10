@@ -45,4 +45,7 @@ export const FIXTURES = {
   REVIEW_MISSING_BASELINE: "review-missing-baseline-pack.json",
   REVIEW_NO_BINDINGS: "review-no-bindings-pack.json",
   REVIEW_IMMEDIATE_ONLY: "review-immediate-only-pack.json",
+  RUNTIME_INVALID_MISSING_META: "runtime-invalid-missing-meta.json",
+  RUNTIME_INVALID_BAD_TRANSITION: "runtime-invalid-bad-transition.json",
+  RUNTIME_INVALID_EMPTY_LAYERS: "runtime-invalid-empty-layers.json",
 } as const;
