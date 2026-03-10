@@ -2,7 +2,7 @@
 // Scale math — pitch classes, scale degrees, snapping
 // ────────────────────────────────────────────
 
-import type { PitchClass, ScaleDefinition, Key, NoteEvent } from "./types.js";
+import type { PitchClass, ScaleDefinition, Key, NoteEvent, NoteName } from "./types.js";
 import { NOTE_NAMES } from "./types.js";
 
 // ── Built-in scales ──
@@ -50,7 +50,7 @@ export function noteName(midi: number): string {
 export function parseMidi(name: string): number {
   const match = name.match(/^([A-G]#?)(-?\d+)$/);
   if (!match) return -1;
-  const idx = NOTE_NAMES.indexOf(match[1] as any);
+  const idx = NOTE_NAMES.indexOf(match[1] as NoteName);
   if (idx < 0) return -1;
   return (parseInt(match[2]) + 1) * 12 + idx;
 }

@@ -2,8 +2,8 @@
 // Chord generation and progression helpers
 // ────────────────────────────────────────────
 
-import type { PitchClass, Chord, ChordQuality, ChordMarker, Key, NoteEvent } from "./types.js";
-import { scalePitchClasses, midiNote, pitchClass } from "./scales.js";
+import type { Chord, ChordQuality, ChordMarker, Key, NoteEvent } from "./types.js";
+import { scalePitchClasses, midiNote } from "./scales.js";
 
 // ── Chord intervals by quality ──
 

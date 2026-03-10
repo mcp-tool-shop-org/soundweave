@@ -14,7 +14,7 @@ export interface IntensityOptions {
 }
 
 /** Derive a low-intensity version: thin, soft, no ghosts */
-export function lowIntensity(notes: readonly NoteEvent[], opts?: IntensityOptions): NoteEvent[] {
+export function lowIntensity(notes: readonly NoteEvent[]): NoteEvent[] {
   let result = removeGhostHits([...notes], 50);
   result = thinNotes(result, 2);
   // Soften velocity
@@ -26,7 +26,7 @@ export function lowIntensity(notes: readonly NoteEvent[], opts?: IntensityOption
 }
 
 /** Derive a mid-intensity version: original with slight accent */
-export function midIntensity(notes: readonly NoteEvent[], opts?: IntensityOptions): NoteEvent[] {
+export function midIntensity(notes: readonly NoteEvent[]): NoteEvent[] {
   let result = [...notes];
   result = accentEveryN(result, 4, 10);
   return result;
@@ -78,8 +78,8 @@ export function deriveIntensity(
   opts?: IntensityOptions,
 ): NoteEvent[] {
   switch (tier) {
-    case "low":  return lowIntensity(notes, opts);
-    case "mid":  return midIntensity(notes, opts);
+    case "low":  return lowIntensity(notes);
+    case "mid":  return midIntensity(notes);
     case "high": return highIntensity(notes, opts);
   }
 }
