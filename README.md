@@ -1,6 +1,15 @@
-# Soundweave
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="400" alt="SoundWeave">
+</p>
 
-Adaptive soundtrack studio for composing, arranging, scoring, mixing, automating, performing, and exporting interactive music for games.
+<p align="center">
+  <a href="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://codecov.io/gh/mcp-tool-shop-org/soundweave"><img src="https://codecov.io/gh/mcp-tool-shop-org/soundweave/branch/main/graph/badge.svg" alt="Coverage"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
+  <a href="https://mcp-tool-shop-org.github.io/soundweave/"><img src="https://img.shields.io/badge/Landing_Page-live-blue" alt="Landing Page"></a>
+</p>
+
+Adaptive soundtrack studio for composing, arranging, scoring, and exporting interactive game music.
 
 ## What It Is
 
@@ -28,94 +37,78 @@ A DAW. A toy sequencer. An AI music generator. A world-building database with so
 
 | App | Description |
 |-----|-------------|
-| `apps/studio` | Main authoring UI (Next.js 15, Zustand 5) |
-| `apps/docs` | Documentation site (Astro) |
+| [`apps/studio`](apps/studio) | Main authoring UI (Next.js 15, Zustand 5) |
+| [`apps/docs`](apps/docs) | Documentation site (Astro) |
 
 ### Core Packages
 
 | Package | Description |
 |---------|-------------|
-| `@soundweave/schema` | Canonical types, Zod schemas, parse/validate |
-| `@soundweave/asset-index` | Pack integrity indexing and auditing |
-| `@soundweave/audio-engine` | Sample playback and voice management |
-| `@soundweave/test-kit` | Fixtures and test utilities |
+| [`@soundweave/schema`](packages/schema) | Canonical types, Zod schemas, parse/validate |
+| [`@soundweave/asset-index`](packages/asset-index) | Pack integrity indexing and auditing |
+| [`@soundweave/audio-engine`](packages/audio-engine) | Sample playback and voice management |
+| [`@soundweave/test-kit`](packages/test-kit) | Fixtures and test utilities |
 
-### Musical and Playback Packages
-
-| Package | Description |
-|---------|-------------|
-| `@soundweave/sample-lab` | Trim, slice, kit, instrument helpers |
-| `@soundweave/score-map` | Motifs, profiles, cue families, derivation |
-| `@soundweave/automation` | Lanes, macros, envelopes, capture |
-| `@soundweave/library` | Templates, snapshots, branches, favorites, compare |
-
-### Infrastructure Packages
+### Composition and Playback
 
 | Package | Description |
 |---------|-------------|
-| `@soundweave/scene-mapper` | Trigger mapping logic |
-| `@soundweave/runtime-pack` | Runtime export/import |
-| `@soundweave/review` | Summaries and audit helpers |
-| `@soundweave/ui` | Shared UI components |
+| [`@soundweave/clip-engine`](packages/clip-engine) | Clip sequencing, transforms, cue scheduling |
+| [`@soundweave/instrument-rack`](packages/instrument-rack) | Synth and drum voice management with presets |
+| [`@soundweave/music-theory`](packages/music-theory) | Scales, chords, motifs, intensity transforms |
+| [`@soundweave/playback-engine`](packages/playback-engine) | Real-time playback, mixing, effects, rendering |
+| [`@soundweave/sample-lab`](packages/sample-lab) | Trim, slice, kit, instrument helpers |
+| [`@soundweave/score-map`](packages/score-map) | Motifs, profiles, cue families, derivation |
+| [`@soundweave/automation`](packages/automation) | Lanes, macros, envelopes, capture |
+| [`@soundweave/library`](packages/library) | Templates, snapshots, branches, favorites, compare |
 
-## Studio Screens
+### Infrastructure
 
-| Screen | What it does |
-|--------|-------------|
-| Overview | Pack metadata, entity counts, audit summary |
-| Assets | Browse, filter, and manage audio assets |
-| Stems | Create and edit stems bound to assets |
-| Scenes | Build scenes from stem layers |
-| Bindings | Map runtime state to scenes with priority |
-| Transitions | Define scene-to-scene transition behavior |
-| Clips | Compose clips with notes, instruments, and variants |
-| Sample Lab | Import, trim, slice, build kits and instruments |
-| Score Map | Profiles, motifs, cue families, world map, derivation |
-| Automation | Lanes, macros, envelopes, capture, mixer |
-| Library | Templates, snapshots, branches, favorites, collections, compare |
+| Package | Description |
+|---------|-------------|
+| [`@soundweave/scene-mapper`](packages/scene-mapper) | Trigger mapping and deterministic binding evaluation |
+| [`@soundweave/runtime-pack`](packages/runtime-pack) | Runtime export/import with deterministic serialization |
+| [`@soundweave/review`](packages/review) | Summaries and audit helpers |
+| [`@soundweave/ui`](packages/ui) | Shared UI components |
 
 ## Quick Start
 
 ```bash
 pnpm install
-pnpm build    # 14 packages
-pnpm lint     # 14 packages
-pnpm test     # 27 test tasks, 299+ tests
-pnpm dev      # Start Studio dev server
+pnpm build
+pnpm test       # 299+ tests across all packages
+pnpm dev        # Start Studio dev server
 ```
+
+**Requirements:** Node.js >= 22, pnpm >= 10
 
 ## Testing
 
-All packages have unit tests. The test suite covers:
-
-- Schema validation (27 tests)
-- Pack integrity and auditing (20 tests)
-- Sample lab operations (33 tests)
-- Score map and world scoring (47 tests)
-- Automation lanes, macros, envelopes, capture (55 tests)
-- Library templates, snapshots, branches, favorites, compare (49 tests)
-- Studio store integration (60 tests)
+All packages have unit tests covering schema validation, integrity auditing, sample operations, world scoring, automation, library management, and studio integration.
 
 Run everything: `pnpm test`
 
 ## Handbook
 
-The [handbook](handbook/) is the comprehensive operating manual covering product vision, architecture, data model, studio usage, creative workflows, and engineering practices.
+The [handbook](handbook/) is the comprehensive operating manual covering product vision, architecture, data model, studio usage, creative workflows, and engineering practices (40 chapters).
 
-Priority chapters:
-- [What Soundweave Is](handbook/src/01-vision.md)
-- [Design Principles](handbook/src/04-design-principles.md)
-- [Repository Overview](handbook/src/05-repository-overview.md)
-- [Studio Overview](handbook/src/21-studio-overview.md)
-- [Building a Cue from Scratch](handbook/src/30-building-a-cue.md)
-- [Working with Custom Samples](handbook/src/31-custom-samples.md)
-- [World Scoring](handbook/src/32-world-scoring-workflow.md)
-- [Automation and Performance Capture](handbook/src/33-automation-capture.md)
-- [Library, Branching, and Reuse](handbook/src/34-library-branching-reuse.md)
-- [Rendering and Runtime Export](handbook/src/38-rendering-runtime-export.md)
-- [Roadmap](handbook/src/39-roadmap.md)
-- [Glossary](handbook/src/40-glossary.md)
+## Security and Trust
+
+Soundweave runs **entirely in the browser**. No server, no cloud sync, no telemetry.
+
+- **Data touched:** User-created soundtrack pack files (JSON), audio asset references, browser local storage
+- **Data NOT touched:** No server-side storage, no file system access beyond browser sandbox
+- **Network:** Zero network egress — all authoring and playback is client-side
+- **Secrets:** Does not read, store, or transmit credentials
+- **Telemetry:** None collected or sent
+- **Permissions:** Standard browser APIs only (Web Audio API)
+
+See [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
 ## License
 
 MIT
+
+---
+
+Built by <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>

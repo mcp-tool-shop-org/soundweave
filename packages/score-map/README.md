@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/score-map
 
 World scoring logic for Soundweave — motif families, score profiles, cue families, world map entries, and derivation.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/library
 
 Templates, snapshots, branches, favorites, collections, and entity comparison for Soundweave.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/automation
 
 Expressive automation for Soundweave — lanes, interpolation, macros, envelopes, and live capture.

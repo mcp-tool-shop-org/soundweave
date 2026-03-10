@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/schema
 
 Canonical types and validation for Soundweave soundtrack packs.

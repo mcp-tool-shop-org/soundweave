@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/studio
 
 The Studio app is the primary authoring surface for Soundweave packs. It provides a dark-themed control surface for creating, editing, and inspecting every entity in a pack.

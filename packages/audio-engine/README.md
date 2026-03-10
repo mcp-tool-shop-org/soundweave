@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/mcp-tool-shop-org/brand/main/logos/soundweave/readme.png" width="200" alt="SoundWeave">
+</p>
+
 # @soundweave/audio-engine
 
 Sample playback and voice management for Soundweave.
@@ -28,9 +32,9 @@ import {
 
 ## What It Does Not Own
 
-- Scene orchestration and mixing (handled by Studio)
+- Scene orchestration and mixing (handled by `@soundweave/playback-engine`)
 - Audio file decoding (browser AudioContext handles this)
-- Clip/cue composition (handled by `@soundweave/schema` types)
+- Clip/cue composition (handled by `@soundweave/clip-engine`)
 
 ## Dependencies
 
