@@ -13,13 +13,27 @@ The Studio app is the primary authoring surface for Soundweave packs. It provide
 | **Bindings** | CRUD for bindings with inline condition editing |
 | **Transitions** | CRUD for transitions with mode-specific validation warnings |
 | **Review** | Live validation findings from `@soundweave/review`, grouped by severity |
+| **Preview** | Manual and sequence runtime state simulation with engine integration |
+
+## Preview
+
+The Preview screen simulates runtime soundtrack behavior against the current draft pack.
+
+Current capabilities:
+- manual runtime state preview
+- editable sequence simulation
+- winning binding and scene inspection
+- active stem inspection
+- transition and warning visibility
+
+This preview is simulation-based and does not perform real audio playback.
 
 ## Development
 
 ```bash
 pnpm --filter @soundweave/studio dev    # Next.js dev server
 pnpm --filter @soundweave/studio build  # Production build
-pnpm --filter @soundweave/studio test   # Run tests (45 tests)
+pnpm --filter @soundweave/studio test   # Run tests
 ```
 
 ## Stack

@@ -11,6 +11,7 @@ const navItems: { section: Section; label: string }[] = [
   { section: "bindings", label: "Bindings" },
   { section: "transitions", label: "Transitions" },
   { section: "review", label: "Review" },
+  { section: "preview", label: "Preview" },
 ];
 
 export function SidebarNav() {

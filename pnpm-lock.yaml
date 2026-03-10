@@ -51,9 +51,15 @@ importers:
       '@soundweave/asset-index':
         specifier: workspace:*
         version: link:../../packages/asset-index
+      '@soundweave/audio-engine':
+        specifier: workspace:*
+        version: link:../../packages/audio-engine
       '@soundweave/review':
         specifier: workspace:*
         version: link:../../packages/review
+      '@soundweave/scene-mapper':
+        specifier: workspace:*
+        version: link:../../packages/scene-mapper
       '@soundweave/schema':
         specifier: workspace:*
         version: link:../../packages/schema

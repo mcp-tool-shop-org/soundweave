@@ -22,7 +22,8 @@ export type Section =
   | "scenes"
   | "bindings"
   | "transitions"
-  | "review";
+  | "review"
+  | "preview";
 
 // ── Store shape ──
 

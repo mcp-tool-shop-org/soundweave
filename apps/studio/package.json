@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@soundweave/asset-index": "workspace:*",
+    "@soundweave/audio-engine": "workspace:*",
     "@soundweave/review": "workspace:*",
+    "@soundweave/scene-mapper": "workspace:*",
     "@soundweave/schema": "workspace:*",
     "@soundweave/ui": "workspace:*",
     "next": "^15.3.0",

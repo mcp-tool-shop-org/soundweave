@@ -11,6 +11,7 @@ import {
   BindingsScreen,
   TransitionsScreen,
   ReviewScreen,
+  PreviewScreen,
 } from "./screens";
 import { starterPack } from "./seed-data";
 
@@ -31,6 +32,8 @@ function ScreenRouter() {
       return <TransitionsScreen />;
     case "review":
       return <ReviewScreen />;
+    case "preview":
+      return <PreviewScreen />;
   }
 }
 
