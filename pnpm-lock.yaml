@@ -57,6 +57,9 @@ importers:
       '@soundweave/audio-engine':
         specifier: workspace:*
         version: link:../../packages/audio-engine
+      '@soundweave/playback-engine':
+        specifier: workspace:*
+        version: link:../../packages/playback-engine
       '@soundweave/review':
         specifier: workspace:*
         version: link:../../packages/review
@@ -131,6 +134,28 @@ importers:
 
   packages/audio-engine:
     dependencies:
+      '@soundweave/scene-mapper':
+        specifier: workspace:*
+        version: link:../scene-mapper
+      '@soundweave/schema':
+        specifier: workspace:*
+        version: link:../schema
+    devDependencies:
+      '@soundweave/test-kit':
+        specifier: workspace:*
+        version: link:../test-kit
+      typescript:
+        specifier: ^5.8.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@22.19.15)(jsdom@28.1.0)(yaml@2.8.2)
+
+  packages/playback-engine:
+    dependencies:
+      '@soundweave/audio-engine':
+        specifier: workspace:*
+        version: link:../audio-engine
       '@soundweave/scene-mapper':
         specifier: workspace:*
         version: link:../scene-mapper

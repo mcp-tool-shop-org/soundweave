@@ -5,6 +5,7 @@ import { usePreviewStore } from "../preview-store";
 import { useReview } from "../hooks";
 import { ManualPreview } from "./ManualPreview";
 import { SequencePreview } from "./SequencePreview";
+import { TransportStrip } from "../components/TransportStrip";
 
 export function PreviewScreen() {
   const pack = useStudioStore((s) => s.pack);
@@ -44,6 +45,8 @@ export function PreviewScreen() {
         </div>
 
         {previewMode === "manual" ? <ManualPreview /> : <SequencePreview />}
+
+        <TransportStrip />
       </div>
     </>
   );

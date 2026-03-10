@@ -2,19 +2,37 @@
 
 import { useStudioStore } from "../store";
 import { usePreviewStore } from "../preview-store";
+import { usePlaybackStore } from "../playback-store";
 import { useManualPreview } from "../preview-hooks";
 import { StateEditor } from "../components/StateEditor";
+import { StemMixer } from "../components/StemMixer";
 
 export function ManualPreview() {
   const pack = useStudioStore((s) => s.pack);
   const manualState = usePreviewStore((s) => s.manualState);
   const setManualField = usePreviewStore((s) => s.setManualField);
+  const playScene = usePlaybackStore((s) => s.playScene);
+  const stopPlayback = usePlaybackStore((s) => s.stop);
+  const transportState = usePlaybackStore((s) => s.transportState);
   const { resolution, layers, transition, transitionWarning } =
     useManualPreview();
 
   const winningBinding = resolution.winningBindingId
     ? pack.bindings.find((b) => b.id === resolution.winningBindingId)
     : undefined;
+
+  const isPlaying = transportState === "playing";
+  const isLoading = transportState === "loading";
+
+  const handlePlay = () => {
+    if (resolution.sceneId) {
+      void playScene(pack, resolution.sceneId);
+    }
+  };
+
+  const handleStop = () => {
+    stopPlayback();
+  };
 
   return (
     <div className="preview-two-panel">
@@ -23,6 +41,28 @@ export function ManualPreview() {
         <div className="meta-section">
           <h3>Runtime State</h3>
           <StateEditor state={manualState} onChange={setManualField} />
+        </div>
+
+        {/* Playback controls */}
+        <div className="meta-section">
+          <h3>Playback</h3>
+          <div className="playback-controls">
+            <button
+              className="btn btn-primary"
+              onClick={handlePlay}
+              disabled={!resolution.sceneId || isLoading}
+            >
+              {isLoading ? "Loading…" : isPlaying ? "▶ Replay Scene" : "▶ Play Scene"}
+            </button>
+            <button
+              className="btn"
+              onClick={handleStop}
+              disabled={transportState === "stopped"}
+            >
+              ■ Stop
+            </button>
+          </div>
+          <StemMixer />
         </div>
       </div>
 

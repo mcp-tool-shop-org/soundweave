@@ -14,6 +14,7 @@
   "dependencies": {
     "@soundweave/asset-index": "workspace:*",
     "@soundweave/audio-engine": "workspace:*",
+    "@soundweave/playback-engine": "workspace:*",
     "@soundweave/review": "workspace:*",
     "@soundweave/runtime-pack": "workspace:*",
     "@soundweave/scene-mapper": "workspace:*",

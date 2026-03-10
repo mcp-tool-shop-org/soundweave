@@ -2,6 +2,7 @@
 
 import { useStudioStore } from "../store";
 import { usePreviewStore } from "../preview-store";
+import { usePlaybackStore } from "../playback-store";
 import { useSequencePreview } from "../preview-hooks";
 import { StateEditor } from "../components/StateEditor";
 import { StateChips } from "../components/StateChips";
@@ -15,8 +16,19 @@ export function SequencePreview() {
   const removeStep = usePreviewStore((s) => s.removeSequenceStep);
   const duplicateStep = usePreviewStore((s) => s.duplicateSequenceStep);
   const resetSequence = usePreviewStore((s) => s.resetSequence);
+  const playSequence = usePlaybackStore((s) => s.playSequence);
+  const stopPlayback = usePlaybackStore((s) => s.stop);
+  const transportState = usePlaybackStore((s) => s.transportState);
+  const sequenceState = usePlaybackStore((s) => s.sequenceState);
   const trace = useSequencePreview();
   const [editingStep, setEditingStep] = useState<number | null>(null);
+
+  const isPlaying = transportState === "playing";
+  const isLoading = transportState === "loading";
+
+  const handlePlaySequence = () => {
+    void playSequence(pack, steps);
+  };
 
   return (
     <div className="sequence-preview">
@@ -29,6 +41,27 @@ export function SequencePreview() {
           Reset to Example
         </button>
         <span className="text-dim">{steps.length} steps</span>
+        <div className="sequence-playback-controls">
+          <button
+            className="btn btn-primary"
+            onClick={handlePlaySequence}
+            disabled={steps.length === 0 || isLoading}
+          >
+            {isLoading ? "Loading…" : isPlaying ? "▶ Restart" : "▶ Play All"}
+          </button>
+          <button
+            className="btn"
+            onClick={stopPlayback}
+            disabled={transportState === "stopped"}
+          >
+            ■ Stop
+          </button>
+          {sequenceState.playing && (
+            <span className="sequence-step-indicator">
+              Step {sequenceState.currentStepIndex + 1} / {sequenceState.totalSteps}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Step editor (expanded inline) */}
@@ -68,7 +101,7 @@ export function SequencePreview() {
           return (
             <div
               key={i}
-              className={`trace-row ${step.warnings.length > 0 ? "has-warnings" : ""}`}
+              className={`trace-row ${step.warnings.length > 0 ? "has-warnings" : ""} ${sequenceState.playing && sequenceState.currentStepIndex === i ? "current-step" : ""}`}
             >
               <span className="trace-col-step">{step.index + 1}</span>
               <span className="trace-col-state">
