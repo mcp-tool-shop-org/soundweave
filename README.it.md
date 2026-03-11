@@ -13,21 +13,21 @@
   <a href="https://mcp-tool-shop-org.github.io/soundweave/"><img src="https://img.shields.io/badge/Landing_Page-live-blue" alt="Landing Page"></a>
 </p>
 
-Studio di composizione musicale adattiva per creare, organizzare, comporre e esportare musica interattiva per videogiochi.
+Studio di composizione musicale adattiva per creare, organizzare, realizzare partiture e esportare musica interattiva per videogiochi.
 
 ## Cos'è
 
-Soundweave è una workstation orientata alla composizione, con funzionalità di adattamento. Combina la creazione musicale strutturata (clip, indicazioni, scene, livelli, automazioni) con una logica adattiva che risponde allo stato del gioco durante l'esecuzione. Il risultato: musica per videogiochi che sembra intenzionale, non generata.
+Soundweave è una workstation orientata alla composizione, con funzionalità di adattamento. Combina la creazione musicale strutturata (clip, indicazioni, scene, livelli, automazioni) con una logica adattiva che risponde allo stato del gioco durante l'esecuzione. Il risultato: musica per videogiochi che sembra intenzionale, non generata casualmente.
 
 ## Cosa non è
 
-Una DAW (Digital Audio Workstation). Un sequencer giocattolo. Un generatore di musica basato sull'intelligenza artificiale. Un database di creazione di mondi con audio integrato. Soundweave è uno strumento creativo avanzato per la composizione di musica adattiva per videogiochi.
+Una DAW (Digital Audio Workstation). Un sequencer giocattolo. Un generatore di musica basato sull'intelligenza artificiale. Un database per la creazione di mondi con elementi audio associati. Soundweave è uno strumento creativo avanzato per la realizzazione di partiture musicali adattive per videogiochi.
 
 ## Cosa può fare
 
 - **Comporre** — Clip con note, strumenti, scale, accordi, trasformazioni di motivi, varianti di intensità.
 - **Organizzare** — Scene con livelli, ruoli delle sezioni, curve di intensità.
-- **Comporre un mondo** — Famiglie di motivi, profili di composizione, famiglie di indicazioni, voci di mappe del mondo, derivazione.
+- **Creare un mondo musicale** — Famiglie di motivi, profili di partitura, famiglie di indicazioni, voci di mappe del mondo, derivazioni.
 - **Automatizzare** — Tracce, macro, inviluppi, acquisizione e unione in tempo reale.
 - **Richiamare e riutilizzare** — Modelli, snapshot, rami, preferiti, raccolte, confronto.
 - **Flusso di lavoro con campioni** — Importazione, taglio, suddivisione, creazione di kit, strumenti basati su campioni.
@@ -60,9 +60,9 @@ Una DAW (Digital Audio Workstation). Un sequencer giocattolo. Un generatore di m
 | [`@soundweave/clip-engine`](packages/clip-engine) | Sequenziamento di clip, trasformazioni, pianificazione di indicazioni. |
 | [`@soundweave/instrument-rack`](packages/instrument-rack) | Gestione delle voci di sintetizzatori e batteria con preset. |
 | [`@soundweave/music-theory`](packages/music-theory) | Scale, accordi, motivi, trasformazioni di intensità. |
-| [`@soundweave/playback-engine`](packages/playback-engine) | Riproduzione in tempo reale, missaggio, effetti, rendering. |
+| [`@soundweave/playback-engine`](packages/playback-engine) | Riproduzione in tempo reale, mixaggio, effetti, rendering. |
 | [`@soundweave/sample-lab`](packages/sample-lab) | Strumenti per il taglio, la suddivisione, la creazione di kit e di strumenti. |
-| [`@soundweave/score-map`](packages/score-map) | Motivi, profili, famiglie di indicazioni, derivazione. |
+| [`@soundweave/score-map`](packages/score-map) | Motivi, profili, famiglie di indicazioni, derivazioni. |
 | [`@soundweave/automation`](packages/automation) | Tracce, macro, inviluppi, acquisizione. |
 | [`@soundweave/library`](packages/library) | Modelli, snapshot, rami, preferiti, confronto. |
 
@@ -88,7 +88,7 @@ pnpm dev        # Start Studio dev server
 
 ## Test
 
-Tutti i pacchetti includono test unitari che coprono la validazione dello schema, il controllo dell'integrità, le operazioni sui campioni, la composizione di mondi, l'automazione, la gestione delle librerie e l'integrazione con lo studio.
+Tutti i pacchetti includono test unitari che coprono la validazione dello schema, il controllo dell'integrità, le operazioni sui campioni, la creazione di partiture musicali, l'automazione, la gestione delle librerie e l'integrazione con lo studio.
 
 Eseguire tutto: `pnpm test`
 
@@ -102,9 +102,9 @@ Soundweave funziona **interamente nel browser**. Nessun server, nessuna sincroni
 
 - **Dati accessibili:** File di pacchetti di colonna sonora creati dall'utente (JSON), riferimenti a risorse audio, archiviazione locale del browser.
 - **Dati NON accessibili:** Nessun archivio lato server, nessun accesso al file system al di fuori della sandbox del browser.
-- **Rete:** Nessun traffico di rete in uscita: tutta la composizione e la riproduzione avvengono lato client.
+- **Rete:** Nessuna connessione di rete in uscita; tutta la composizione e la riproduzione avvengono lato client.
 - **Credenziali:** Non legge, memorizza o trasmette credenziali.
-- **Telemetria:** Nessuna informazione raccolta o inviata.
+- **Telemetria:** Nessuna informazione raccolta o trasmessa.
 - **Permessi:** Solo API del browser standard (Web Audio API).
 
 Consultare il file [SECURITY.md](SECURITY.md) per segnalare eventuali vulnerabilità.

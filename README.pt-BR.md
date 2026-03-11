@@ -51,14 +51,14 @@ Uma DAW (Digital Audio Workstation). Um sequenciador simples. Um gerador de mús
 | [`@soundweave/schema`](packages/schema) | Tipos canônicos, esquemas Zod, análise/validação. |
 | [`@soundweave/asset-index`](packages/asset-index) | Indexação e auditoria da integridade dos pacotes. |
 | [`@soundweave/audio-engine`](packages/audio-engine) | Reprodução de amostras e gerenciamento de vozes. |
-| [`@soundweave/test-kit`](packages/test-kit) | Fixutros e utilitários de teste. |
+| [`@soundweave/test-kit`](packages/test-kit) | Ferramentas de teste e utilitários. |
 
 ### Composição e Reprodução
 
 | Pacote | Descrição |
 |---------|-------------|
 | [`@soundweave/clip-engine`](packages/clip-engine) | Sequenciamento de trechos, transformações, agendamento de pistas. |
-| [`@soundweave/instrument-rack`](packages/instrument-rack) | Gerenciamento de vozes de sintetizador e bateria com predefinições. |
+| [`@soundweave/instrument-rack`](packages/instrument-rack) | Gerenciamento de vozes de sintetizadores e bateria com presets. |
 | [`@soundweave/music-theory`](packages/music-theory) | Escalas, acordes, motivos, transformações de intensidade. |
 | [`@soundweave/playback-engine`](packages/playback-engine) | Reprodução em tempo real, mixagem, efeitos, renderização. |
 | [`@soundweave/sample-lab`](packages/sample-lab) | Ferramentas para cortar, dividir, criar kits e instrumentos. |
@@ -115,4 +115,4 @@ MIT
 
 ---
 
-Desenvolvido por <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>
+Desenvolvido por <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>.

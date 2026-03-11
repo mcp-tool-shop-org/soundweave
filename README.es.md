@@ -13,27 +13,27 @@
   <a href="https://mcp-tool-shop-org.github.io/soundweave/"><img src="https://img.shields.io/badge/Landing_Page-live-blue" alt="Landing Page"></a>
 </p>
 
-Estudio de composición de música adaptativa para crear, organizar, componer y exportar música interactiva para videojuegos.
+Estudio de composición de música adaptable para crear, organizar, componer y exportar música interactiva para videojuegos.
 
 ## ¿Qué es?
 
-Soundweave es una estación de trabajo centrada en la composición, que también tiene en cuenta la adaptación. Combina la creación musical estructurada (clips, indicaciones, escenas, capas, automatización) con una lógica adaptativa que responde al estado del juego en tiempo real. El resultado: música para videojuegos que parece intencional, no generada.
+Soundweave es una estación de trabajo centrada en la composición, con capacidad de adaptación. Combina la creación musical estructurada (clips, indicaciones, escenas, capas, automatización) con una lógica adaptativa que responde al estado del juego en tiempo real. El resultado: música para videojuegos que parece intencional, no generada.
 
 ## ¿Qué no es?
 
-Un DAW (Digital Audio Workstation). Un secuenciador simple. Un generador de música con inteligencia artificial. Una base de datos para la creación de mundos con sonido adjunto. Soundweave es una herramienta creativa seria para la composición de música adaptativa para videojuegos.
+Un DAW (Digital Audio Workstation). Un secuenciador básico. Un generador de música con inteligencia artificial. Una base de datos para la creación de mundos con sonido adjunto. Soundweave es una herramienta creativa seria para la composición de música adaptable para videojuegos.
 
 ## ¿Qué puede hacer?
 
 - **Componer:** Clips con notas, instrumentos, escalas, acordes, transformaciones de motivos, variaciones de intensidad.
 - **Organizar:** Escenas con capas, roles de sección, curvas de intensidad.
 - **Crear un mundo:** Familias de motivos, perfiles de composición, familias de indicaciones, entradas de mapa del mundo, derivación.
-- **Automatizar:** Pistas, macros, envolventes, captura y combinación en vivo.
+- **Automatizar:** Pistas, macros, envolventes, captura y combinación en tiempo real.
 - **Recordar y reutilizar:** Plantillas, instantáneas, ramas, favoritos, colecciones, comparación.
-- **Flujo de trabajo con muestras:** Importar, recortar, dividir, creador de kits, instrumentos de muestra.
+- **Flujo de trabajo con muestras:** Importación, recorte, segmentación, creación de kits, instrumentos de muestra.
 - **Lógica adaptativa:** Enlaces de activación, transiciones, resolución de escenas determinista.
 - **Validar:** Validación de esquemas, auditoría de integridad, comprobaciones de referencias cruzadas.
-- **Exportar:** Paquetes de tiempo de ejecución para que los motores de juego los utilicen.
+- **Exportar:** Paquetes de tiempo de ejecución para su uso en motores de juego.
 
 ## Estructura de Monorrepositorio
 
@@ -51,7 +51,7 @@ Un DAW (Digital Audio Workstation). Un secuenciador simple. Un generador de mús
 | [`@soundweave/schema`](packages/schema) | Tipos canónicos, esquemas Zod, análisis/validación. |
 | [`@soundweave/asset-index`](packages/asset-index) | Indexación y auditoría de la integridad de los paquetes. |
 | [`@soundweave/audio-engine`](packages/audio-engine) | Reproducción de muestras y gestión de voces. |
-| [`@soundweave/test-kit`](packages/test-kit) | Herramientas de prueba y pruebas. |
+| [`@soundweave/test-kit`](packages/test-kit) | Herramientas de prueba y configuración. |
 
 ### Composición y reproducción
 
@@ -61,7 +61,7 @@ Un DAW (Digital Audio Workstation). Un secuenciador simple. Un generador de mús
 | [`@soundweave/instrument-rack`](packages/instrument-rack) | Gestión de voces de sintetizador y batería con preajustes. |
 | [`@soundweave/music-theory`](packages/music-theory) | Escalas, acordes, motivos, transformaciones de intensidad. |
 | [`@soundweave/playback-engine`](packages/playback-engine) | Reproducción en tiempo real, mezcla, efectos, renderizado. |
-| [`@soundweave/sample-lab`](packages/sample-lab) | Herramientas para recortar, dividir, crear kits e instrumentos. |
+| [`@soundweave/sample-lab`](packages/sample-lab) | Herramientas para recortar, segmentar, crear kits e instrumentos. |
 | [`@soundweave/score-map`](packages/score-map) | Motivos, perfiles, familias de indicaciones, derivación. |
 | [`@soundweave/automation`](packages/automation) | Pistas, macros, envolventes, captura. |
 | [`@soundweave/library`](packages/library) | Plantillas, instantáneas, ramas, favoritos, comparación. |
@@ -101,8 +101,8 @@ El [manual](handbook/) es el manual de operación completo que cubre la visión 
 Soundweave se ejecuta **completamente en el navegador**. No hay servidor, no hay sincronización en la nube, no hay telemetría.
 
 - **Datos accedidos:** Archivos de paquete de banda sonora creados por el usuario (JSON), referencias de activos de audio, almacenamiento local del navegador.
-- **Datos NO accedidos:** No hay almacenamiento en el servidor, no hay acceso al sistema de archivos más allá de la sandbox del navegador.
-- **Red:** Cero tráfico de red saliente: toda la composición y reproducción se realiza en el lado del cliente.
+- **Datos NO accedidos:** No hay almacenamiento en el servidor, no hay acceso al sistema de archivos más allá de la caja de arena del navegador.
+- **Red:** Cero tráfico de red saliente: toda la composición y reproducción se realizan en el lado del cliente.
 - **Contraseñas:** No lee, almacena ni transmite credenciales.
 - **Telemetría:** No se recopila ni se envía nada.
 - **Permisos:** Solo se utilizan las API estándar del navegador (Web Audio API).
