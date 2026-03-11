@@ -1,6 +1,14 @@
 {
   "name": "@soundweave/score-map",
   "version": "1.0.0",
+  "description": "Motifs, profiles, cue families, and derivation for SoundWeave",
+  "license": "MIT",
+  "author": "mcp-tool-shop-org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcp-tool-shop-org/soundweave.git",
+    "directory": "packages/score-map"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,6 +17,12 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc --build",

@@ -16,9 +16,9 @@ export const config: SiteConfig = {
     primaryCta: { href: '#usage', label: 'Get started' },
     secondaryCta: { href: 'handbook/', label: 'Read the Handbook' },
     previews: [
+      { label: 'npm', code: 'npm install @soundweave/schema @soundweave/clip-engine' },
       { label: 'Clone', code: 'git clone https://github.com/mcp-tool-shop-org/soundweave.git' },
-      { label: 'Install', code: 'pnpm install && pnpm build' },
-      { label: 'Launch', code: 'pnpm dev' },
+      { label: 'Dev', code: 'pnpm install && pnpm build && pnpm dev' },
     ],
   },
 

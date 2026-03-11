@@ -4,6 +4,12 @@
   "type": "module",
   "packageManager": "pnpm@10.28.2",
   "description": "Adaptive soundtrack studio for composing, arranging, scoring, and exporting interactive game music",
+  "license": "MIT",
+  "author": "mcp-tool-shop-org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcp-tool-shop-org/soundweave.git"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",

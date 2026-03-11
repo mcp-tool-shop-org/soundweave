@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/search?q=%40soundweave"><img src="https://img.shields.io/npm/v/@soundweave/schema?label=npm&color=cb3837" alt="npm"></a>
   <a href="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/mcp-tool-shop-org/soundweave"><img src="https://codecov.io/gh/mcp-tool-shop-org/soundweave/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
@@ -75,7 +76,15 @@ A DAW. A toy sequencer. An AI music generator. A world-building database with so
 | [`@soundweave/review`](packages/review) | Summaries and audit helpers |
 | [`@soundweave/ui`](packages/ui) | Shared UI components |
 
-## Quick Start
+## Install
+
+```bash
+npm install @soundweave/schema @soundweave/clip-engine @soundweave/runtime-pack
+```
+
+All packages are published to npm under the `@soundweave` scope.
+
+## Quick Start (monorepo)
 
 ```bash
 pnpm install

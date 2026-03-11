@@ -1,6 +1,14 @@
 {
   "name": "@soundweave/test-kit",
   "version": "1.0.0",
+  "description": "Fixtures and test utilities for SoundWeave packages",
+  "license": "MIT",
+  "author": "mcp-tool-shop-org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcp-tool-shop-org/soundweave.git",
+    "directory": "packages/test-kit"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,6 +17,12 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc --build",
