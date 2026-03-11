@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/score-map",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Motifs, profiles, cue families, and derivation for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

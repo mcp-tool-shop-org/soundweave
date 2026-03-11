@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/sample-lab",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Trim, slice, kit, and instrument helpers for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

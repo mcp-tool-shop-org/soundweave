@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/schema",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Canonical types and Zod validation for SoundWeave adaptive music",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

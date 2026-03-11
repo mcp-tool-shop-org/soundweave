@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/test-kit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fixtures and test utilities for SoundWeave packages",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

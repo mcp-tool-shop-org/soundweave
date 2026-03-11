@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/music-theory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scales, chords, motifs, and intensity helpers for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

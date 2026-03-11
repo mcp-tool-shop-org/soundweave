@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/audio-engine",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sample playback and voice management for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",
