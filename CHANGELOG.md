@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-03-11
+
+### Added
+
+- Example packs: minimal and starter-adventure with per-pack READMEs
+- Handbook entry point links in main README (Building a Cue, Custom Samples, World Scoring, Architecture)
+
+### Changed
+
+- Dependabot config: monthly interval, limit 3 PRs (was weekly/10)
+
 ## [1.0.1] - 2026-03-11
 
 ### Added

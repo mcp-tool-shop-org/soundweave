@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/playback-engine",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Real-time playback, mixing, and effects for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",
