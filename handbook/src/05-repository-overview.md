@@ -13,8 +13,12 @@ soundweave/
 │   ├── schema/        # Canonical types and Zod validation
 │   ├── asset-index/   # Pack integrity indexing and auditing
 │   ├── audio-engine/  # Sample playback and voice management
-│   ├── scene-mapper/  # Trigger mapping logic (placeholder)
-│   ├── runtime-pack/  # Runtime export/import (placeholder)
+│   ├── clip-engine/   # Clip sequencing, transforms, cue scheduling
+│   ├── instrument-rack/ # Synth/drum voice management, presets
+│   ├── music-theory/  # Scales, chords, motifs, intensity transforms
+│   ├── playback-engine/ # Real-time playback, mixing, FX, rendering
+│   ├── scene-mapper/  # Trigger mapping and binding evaluation
+│   ├── runtime-pack/  # Runtime export/import
 │   ├── review/        # Summaries and audit helpers (placeholder)
 │   ├── ui/            # Shared UI components (placeholder)
 │   ├── test-kit/      # Fixtures and test utilities
@@ -22,6 +26,7 @@ soundweave/
 │   ├── score-map/     # World scoring, motifs, profiles, cue families
 │   ├── automation/    # Lanes, macros, envelopes, capture
 │   └── library/       # Templates, snapshots, branches, favorites, compare
+├── site/              # Landing page (Starlight + site-theme)
 ├── examples/          # Example packs and starter content
 ├── handbook/          # This handbook
 ├── eslint.config.js   # Shared ESLint configuration
@@ -49,10 +54,18 @@ Each package has a single, clear responsibility:
 | `schema` | Types, Zod schemas, parse/validate | Business logic, rendering |
 | `asset-index` | Integrity checks, duplicate detection | Asset file I/O |
 | `audio-engine` | Sample playback, voice management | Scene orchestration, mixing |
+| `clip-engine` | Clip sequencing, transforms, cue scheduling | Playback, rendering |
+| `instrument-rack` | Synth/drum voices, presets, MIDI mapping | Audio DSP, effects |
+| `music-theory` | Scales, chords, motifs, intensity transforms | Playback, UI |
+| `playback-engine` | Transport, mixing, FX, cue rendering | Composition, scene mapping |
 | `sample-lab` | Trim, slice, kit, instrument logic | Audio file decoding |
 | `score-map` | Motifs, profiles, cue families, derivation | Playback, rendering |
 | `automation` | Lanes, macros, envelopes, capture | Audio DSP |
 | `library` | Templates, snapshots, branches, favorites | UI, persistence |
+| `scene-mapper` | Trigger evaluation, binding resolution | Scene composition, playback |
+| `runtime-pack` | Export/import, field stripping, validation | Playback SDKs |
+| `review` | Pack summaries, audit reports | Schema validation |
+| `ui` | Shared UI primitives | State management, routing |
 | `test-kit` | Fixtures, loader utilities | Application tests |
 
 ## Toolchain

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-03-11
+
+### Added
+
+- Dependency vulnerability scanning in CI (`pnpm audit` step)
+- Scheduled weekly security audit workflow (`.github/workflows/security.yml`)
+- Dependabot configuration for npm and GitHub Actions dependencies
+- Architecture map handbook chapter (09-architectural-flow.md)
+- 26 new handbook chapters completing the full 40-chapter operating manual:
+  - Part II: Apps, Core Packages, Musical/Playback Packages, Architectural Flow
+  - Part III: SoundtrackPack Overview, Asset Model, Stems/Scenes/Clips, Bindings/Transitions, Clip Composition, Cue Structure, Sample Workflow, World Scoring, Automation/Orchestration, Library/Recall, Runtime Pack Contract
+  - Part IV: Project, Assets, Sample Lab, Stems/Scenes, Clips, Score Map, Automation, Library screens
+  - Part VI: Testing Strategy, Build/Lint/CI, Evolving the Data Model
+- Expanded example pack documentation with workflow descriptions
+
+### Changed
+
+- Bumped pinned pnpm version from 10.28.2 to 10.32.1
+- Updated repository overview to include all 16 packages (was missing clip-engine, instrument-rack, music-theory, playback-engine)
+- Updated package boundaries table to cover all 16 packages
+- Completed SCORECARD.md with actual assessment (42/50 pre-remediation → 47/50 post-remediation)
+- Closed SHIP_GATE.md dependency scanning items (previously skipped)
+- Closed SHIP_GATE.md translations soft-gate item
+- Marked landing page as honestly deferred to post-v1
+
 ## [1.0.0] - 2026-03-10
 
 ### Added

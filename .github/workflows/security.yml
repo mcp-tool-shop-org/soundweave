@@ -1,0 +1,38 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: "0 8 * * 1" # Weekly on Monday at 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit all dependencies
+        run: pnpm audit --audit-level=moderate
+
+      - name: Check for known vulnerabilities
+        run: npx audit-ci --moderate
+        continue-on-error: true
+
+      - name: Lockfile diff check
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --name-only HEAD~1 | grep -q 'pnpm-lock.yaml' && echo "::warning::Lockfile changed — review dependency diff" || true

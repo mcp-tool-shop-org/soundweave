@@ -1,30 +1,31 @@
 # Examples
 
-Example soundtrack packs and starter content for Soundweave.
+Example soundtrack packs for Soundweave. Each directory contains a `pack.json` and a README explaining what it demonstrates.
 
-## Current Fixtures
+## Included Packs
 
-Example packs currently live as JSON fixtures in `packages/test-kit/fixtures/`. These are used by the test suite and serve as reference packs:
+### [Minimal Pack](minimal/)
 
-- **minimal-pack.json** — Bare minimum valid pack (2 assets, no optional arrays)
-- **starter-pack.json** — Richer pack with stems, scenes, bindings, and transitions
-- **integrity-valid-pack.json** — Clean pack that passes all integrity checks
+The smallest valid SoundtrackPack — one asset, one stem, one scene, one binding. Start here to understand the base structure.
+
+### [Starter Adventure Pack](starter-adventure/)
+
+A complete RPG exploration-to-combat soundtrack with 8 assets, 5 scenes, 4 transition modes, and priority-ordered bindings. Demonstrates the core adaptive workflow end-to-end.
 
 ## Planned Examples
 
-Educational example packs demonstrating real workflows:
+These packs are planned for future releases:
 
-- **Adaptive Exploration/Combat** — Forest region with exploration, tension, and combat scenes sharing motif families and score profiles
 - **Faction Identity** — Two factions with distinct score profiles, palette tags, and cue families
-- **Custom Sample Kit** — Imported sounds → trim → slice → kit → instrument → clip → scene
+- **Custom Sample Kit** — Full sample-lab pipeline from raw audio to playable composition
 - **Cue Capture** — Live performance captured, thinned, and applied to automation lanes
 - **Automation/Macros** — Macro-driven parameters with section envelopes and intensity mappings
 - **Motif Family World Scoring** — Complete world map with regions, factions, and derived material
 
 ## Adding Examples
 
-Place example packs in this directory as JSON files or subdirectories. Each example should include:
+Place example packs in this directory as subdirectories. Each example should include:
 
-1. A valid `SoundtrackPack` JSON file
-2. A brief README explaining what the example demonstrates
+1. A valid `SoundtrackPack` JSON file named `pack.json`
+2. A README explaining what the example demonstrates
 3. Enough entities to show the workflow end-to-end

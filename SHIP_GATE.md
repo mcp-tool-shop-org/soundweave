@@ -47,8 +47,8 @@
 
 - [x] `[all]` `verify` script exists (test + build + smoke in one command) (2026-03-10)
 - [x] `[all]` Version in manifest matches git tag (2026-03-10)
-- [ ] `[all]` SKIP: dependency scanning deferred — private monorepo, not publishing to registries
-- [ ] `[all]` SKIP: automated dependency updates deferred — private monorepo
+- [x] `[all]` Dependency scanning: `pnpm audit` in CI, scheduled security workflow, Dependabot enabled (2026-03-11)
+- [x] `[all]` Automated dependency updates: Dependabot configured for npm and GitHub Actions (2026-03-11)
 - [ ] `[npm]` SKIP: private monorepo — not publishing individual packages to npm
 - [x] `[npm]` `engines.node` set (2026-03-10) — Node >=22
 - [x] `[npm]` Lockfile committed (2026-03-10) — pnpm-lock.yaml
@@ -58,8 +58,8 @@
 ## E. Identity (soft gate — does not block ship)
 
 - [x] `[all]` Logo in README header (2026-03-10)
-- [ ] `[all]` Translations (polyglot-mcp, 8 languages)
-- [ ] `[org]` Landing page (@mcptoolshop/site-theme)
+- [x] `[all]` Translations: 8-language README translations present for root and all packages (2026-03-11)
+- [ ] `[org]` Landing page: site/ exists with Starlight + site-theme but not yet deployed to production domain — deferred to post-v1
 - [x] `[all]` GitHub repo metadata: description, homepage, topics (2026-03-10)
 
 ---
