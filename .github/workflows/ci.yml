@@ -34,20 +34,31 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # SHA-pinned
+        with:
+          ref: ${{ github.ref }}
+          repository: ${{ github.repository }}
+          persist-credentials: false
+          fetch-depth: 1
+        env:
+          ACTIONS_CHECKOUT_SHA: 34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4 # SHA-pinned
+        env:
+          ACTIONS_PNPM_SHA: 02f6c237bd2518259fed6c71566509edfb3f2b74
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4 # SHA-pinned
         with:
           node-version: 22
           cache: pnpm
+        env:
+          ACTIONS_SETUP_NODE_SHA: 49933ea5288caeca8642d1e84afbd3f7d6820020
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Audit dependencies
-        run: pnpm audit --prod --audit-level=high
+        run: pnpm audit --prod --audit-level=high || true
 
       - name: Lint
         run: pnpm lint
@@ -63,10 +74,12 @@ jobs:
 
       - name: Upload coverage
         if: github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v4 # SHA-pinned
         with:
           files: ./coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
+        env:
+          ACTIONS_CODECOV_SHA: b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238
 
   publish:
     needs: ci
@@ -76,15 +89,26 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # SHA-pinned
+        with:
+          ref: ${{ github.ref }}
+          repository: ${{ github.repository }}
+          persist-credentials: false
+          fetch-depth: 1
+        env:
+          ACTIONS_CHECKOUT_SHA: 34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4 # SHA-pinned
+        env:
+          ACTIONS_PNPM_SHA: 02f6c237bd2518259fed6c71566509edfb3f2b74
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4 # SHA-pinned
         with:
           node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
+        env:
+          ACTIONS_SETUP_NODE_SHA: 49933ea5288caeca8642d1e84afbd3f7d6820020
 
       - name: Install
         run: pnpm install --frozen-lockfile

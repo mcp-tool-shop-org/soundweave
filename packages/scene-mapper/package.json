@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/scene-mapper",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Trigger mapping and scene resolution for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

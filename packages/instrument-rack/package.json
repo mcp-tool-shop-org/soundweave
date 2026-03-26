@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/instrument-rack",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Synth and drum voice management for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

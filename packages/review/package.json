@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/review",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Summaries and audit helpers for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",
