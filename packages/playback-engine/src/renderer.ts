@@ -2,7 +2,7 @@
 // CueRenderer — offline render to AudioBuffer + WAV
 // ────────────────────────────────────────────
 
-import type { SoundtrackPack, Clip, SceneClipRef } from "@soundweave/schema";
+import type { SoundtrackPack } from "@soundweave/schema";
 import { resolveActiveLayers } from "@soundweave/audio-engine";
 import { InstrumentRack } from "@soundweave/instrument-rack";
 import {

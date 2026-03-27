@@ -2,7 +2,7 @@
 // Scene player — play layered stems + synth clips for a scene
 // ────────────────────────────────────────────
 
-import type { SoundtrackPack, Clip } from "@soundweave/schema";
+import type { SoundtrackPack } from "@soundweave/schema";
 import { resolveActiveLayers } from "@soundweave/audio-engine";
 import { InstrumentRack } from "@soundweave/instrument-rack";
 import { scheduleNotes, clipLengthSeconds } from "@soundweave/clip-engine";
