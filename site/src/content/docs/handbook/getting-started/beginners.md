@@ -20,7 +20,7 @@ SoundWeave runs entirely in the browser. There is no server, no cloud sync, and 
 | Concept | What it is |
 |---------|-----------|
 | **Audio Asset** | A file reference (loop, oneshot, stinger, ambient) with metadata |
-| **Stem** | A playable layer bound to an asset with a role (base, danger, combat, boss, recovery, mystery, faction) |
+| **Stem** | A playable layer bound to an asset with a role (base, danger, combat, boss, recovery, mystery, faction, accent) |
 | **Scene** | A named musical state built from stem layers |
 | **Trigger Binding** | A rule mapping game state to a scene, with priority-based resolution |
 | **Transition Rule** | How music moves between scenes (crossfade, bar-sync, immediate, cooldown-fade, stinger-then-switch) |
@@ -37,7 +37,12 @@ Install the packages you need from the `@soundweave` scope:
 npm install @soundweave/schema @soundweave/clip-engine @soundweave/runtime-pack
 ```
 
-All 16 packages are published individually, so you can pick only what your project requires.
+All 16 packages are published individually, so you can pick only what your project requires. Common starting combinations:
+
+- **Game runtime integration**: `@soundweave/schema` + `@soundweave/scene-mapper` + `@soundweave/runtime-pack`
+- **Composition tools**: `@soundweave/schema` + `@soundweave/clip-engine` + `@soundweave/music-theory`
+- **Sample workflow**: `@soundweave/schema` + `@soundweave/sample-lab`
+- **Full authoring stack**: All packages
 
 ### Running the monorepo locally
 
@@ -52,7 +57,17 @@ pnpm test        # 663 tests across all packages
 pnpm dev         # Start the Studio dev server
 ```
 
-The Studio app opens in your browser. Everything else (schema, engines, sample-lab, etc.) is available as importable packages.
+The Studio app opens in your browser at `http://localhost:3000`. Everything else (schema, engines, sample-lab, etc.) is available as importable packages.
+
+### Verifying the build
+
+Run the full verification suite to confirm everything works:
+
+```bash
+pnpm verify      # lint + typecheck + test + build
+```
+
+If any step fails, check that you have the correct Node.js and pnpm versions.
 
 ## 3. Core Workflow Overview
 
@@ -152,11 +167,15 @@ Clips support intensity variants for adaptive layering. A single clip with low/m
 
 ### Over-modeling the world scoring layer
 
-The Score Map (motif families, score profiles, cue families, world map entries) exists to give music coherent relationships to game regions and encounters. It is not a game design tool. Keep context types simple (region, faction, biome, encounter, safe-zone) and let the music lead.
+The Score Map (motif families, score profiles, cue families, world map entries) exists to give music coherent relationships to game regions and encounters. It is not a game design tool. Keep context types simple (`region`, `faction`, `biome`, `encounter`, `safe-zone`) and let the music lead. A score profile that says "Frostlands: slow tempo, D minor, orchestral" is enough -- you do not need to model every NPC or quest.
 
 ### Forgetting to snapshot before destructive edits
 
-The Library system exists for this reason. Before reworking a scene, snapshot it. Before branching in a new direction, snapshot. Snapshots are cheap and let you revert or compare at any time.
+The Library system exists for this reason. Before reworking a scene, snapshot it with `takeSnapshot()`. Before branching in a new direction, snapshot. Snapshots are cheap (they store a serialized copy of the entity data) and let you revert with `restoreSnapshot()` or compare with `compareEntities()` at any time.
+
+### Mixing up the `includes` operator with `in` or `contains`
+
+The trigger condition system uses only one array/string membership operator: `includes`. It works on both arrays (does the array contain this value?) and strings (does the string contain this substring?). There is no separate `in` or `contains` operator.
 
 ## 7. Where to Go Next
 

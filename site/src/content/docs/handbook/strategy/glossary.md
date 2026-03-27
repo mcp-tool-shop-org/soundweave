@@ -9,7 +9,7 @@ sidebar:
 
 **Audio Asset** — A file reference with metadata: kind (loop, oneshot, stinger, ambient), duration, BPM, key, tags, and source type.
 
-**Stem** — A playable layer within a scene, bound to an audio asset with a role (base, danger, combat, boss, recovery, mystery, faction).
+**Stem** — A playable layer within a scene, bound to an audio asset with a role (base, danger, combat, boss, recovery, mystery, faction, accent).
 
 **Scene** — A named musical state composed of stem layers. Scenes represent the music for a game context.
 
@@ -19,7 +19,7 @@ sidebar:
 
 **Trigger Binding** — A rule that maps runtime game state to a scene with priority-based resolution.
 
-**Trigger Condition** — A single comparison: field, operator (`eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `contains`), value.
+**Trigger Condition** — A single comparison: field, operator (`eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `includes`), value.
 
 **Transition Rule** — How music moves between scenes: `immediate`, `crossfade`, `bar-sync`, `cooldown-fade`, or `stinger-then-switch`.
 
@@ -33,7 +33,7 @@ sidebar:
 
 **Cue** — A composed piece with a timeline, sections, and captured performances.
 
-**Cue Section Role** — Structural function: intro, loop, fill, outro, breakdown, build, drop, transition.
+**Cue Section Role** — Structural function: intro, body, escalation, climax, outro, transition.
 
 ## Sample Workflow
 
@@ -53,7 +53,7 @@ sidebar:
 
 **Score Map Entry** — Top-level mapping of musical identity to a game context.
 
-**Derivation Record** — Lineage tracking: "entity B was derived from entity A using transform X."
+**Derivation Record** — Lineage tracking: "entity B was derived from entity A using transform X." Supported transforms: `intensify`, `resolve`, `darken`, `brighten`, `simplify`, `elaborate`, `reharmonize`.
 
 ## Automation
 

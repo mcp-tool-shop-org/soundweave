@@ -29,7 +29,9 @@ A world map entry maps a musical identity to a specific game context (region, fa
 
 ### Derivation
 
-Derivation creates new musical material from existing material with a tracked transform (intensify, simplify, darken, brighten, rhythmic-variation, tonal-shift, fragment, extend, layer, strip). Derivation records track lineage.
+Derivation creates new musical material from existing material with a tracked transform. The supported transforms are: `intensify`, `resolve`, `darken`, `brighten`, `simplify`, `elaborate`, and `reharmonize`. Each derivation record tracks the source entity, target entity, and the transform applied, preserving full lineage.
+
+Use `createDerivation(id, sourceId, targetId, transform)` to record a derivation, and `deriveScene(source, newId, transform)` to produce a new scene from an existing one with an appropriate name suffix. Use `derivationChain(records, startId)` to walk the full lineage graph from any starting point.
 
 ## Building World Coherence
 

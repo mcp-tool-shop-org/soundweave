@@ -9,15 +9,17 @@ Soundweave's automation system lets creators add expressive, time-varying contro
 
 ## Automation Lanes
 
-An automation lane is a list of timed value points for a specific target parameter. Create lanes with `createLane(id, target, points)` and use `evaluateLane(lane, timeMs)` to get interpolated values at any time.
+An automation lane is a list of timed value points for a specific target parameter. Create lanes with `createLane(id, name, param, target)` where `param` is the automatable parameter (`volume`, `pan`, `filterCutoff`, `reverbSend`, `delaySend`, `intensity`) and `target` identifies what the lane is attached to (a clip layer, scene layer, or cue section). Use `addPoint(lane, point)` to add keyframes and the interpolation engine to get values at any time.
+
+Each point has a `timeMs` offset, a normalized `value` (0--1), and an optional `curve` type (`linear`, `exponential`, `step`, `smooth`) controlling interpolation to the next point.
 
 ## Macros
 
-Macros are high-level parameters (intensity, tension, energy) that drive multiple automation targets at once. Game state or performer input changes macro values, which cascade to mapped parameters via `evaluateMacros(mappings, macroState)`.
+Macros are high-level parameters (`intensity`, `tension`, `brightness`, `space`) that drive multiple automation targets at once. Game state or performer input changes macro values, which cascade to mapped parameters via `evaluateMacros(state, mappings, targetId?)`. Create mappings with `createMacroMapping(id, macro, param, weight, opts?)` where `weight` (0--1) controls how much a macro movement affects the target parameter. Mappings can be inverted so that macro-up drives param-down.
 
 ## Section Envelopes
 
-Envelopes shape dynamics across structural sections of a cue (intro, loop, fill, outro, breakdown, build, drop). They add structural dynamics without manually placing automation points.
+Envelopes shape dynamics at the entry or exit of a cue section. Six shapes are available: `fade-in`, `fade-out`, `swell` (quadratic curve), `duck` (dip and recover), `filter-rise` (smooth opening), and `filter-fall` (smooth closing). Each envelope has a duration, a depth (0--1), and a position (`entry` or `exit`). Create them with `createEnvelope(id, targetId, shape, durationMs, position, depth?)` and evaluate with `evaluateEnvelope(envelope, offsetMs)`. They add structural dynamics without manually placing automation points.
 
 ## Capture
 
