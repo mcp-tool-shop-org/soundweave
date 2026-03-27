@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.4] - 2026-03-27
+
+### Added
+- FL Studio-style Arrangement screen as new default landing page
+- Real-time synth clip playback in ScenePlayer via InstrumentRack voices
+- AI Enhance panel with algorithmic music suggestions (drums, bass, harmony, arpeggio, variations)
+- Grouped sidebar navigation (Create/Pack/Quality/Advanced)
+- synthDemoPack seed data with 11 clips across 5 game scenes
+- Offline WAV rendering of clip layers in CueRenderer
+
 ## [1.0.3] - 2026-03-25
 
 ### Added
