@@ -89,7 +89,7 @@ All packages are published to npm under the `@soundweave` scope.
 ```bash
 pnpm install
 pnpm build
-pnpm test       # 299+ tests across all packages
+pnpm test       # 663 tests across all packages
 pnpm dev        # Start Studio dev server
 ```
 
@@ -97,19 +97,20 @@ pnpm dev        # Start Studio dev server
 
 ## Testing
 
-All packages have unit tests covering schema validation, integrity auditing, sample operations, world scoring, automation, library management, and studio integration.
+All 16 packages have unit tests covering schema validation, integrity auditing, sample operations, world scoring, automation, library management, playback, and studio integration. 663 tests across 26 test files.
 
 Run everything: `pnpm test`
 
 ## Handbook
 
-The [handbook](handbook/) is the comprehensive operating manual (40 chapters). Key entry points:
+The [handbook](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/) is the comprehensive operating manual covering product definition, architecture, studio navigation, creative workflows, and strategy. Key entry points:
 
-- [Getting Started: Building a Cue from Scratch](handbook/src/30-building-a-cue.md)
-- [Working with Custom Samples](handbook/src/31-custom-samples.md)
-- [World Scoring Workflow](handbook/src/32-world-scoring-workflow.md)
-- [Automation and Capture](handbook/src/33-automation-capture.md)
-- [Architecture Overview](handbook/src/09-architectural-flow.md)
+- [Product: What SoundWeave Is](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/)
+- [Architecture: Repository Overview](https://mcp-tool-shop-org.github.io/soundweave/handbook/architecture/)
+- [Workflow: Building a Cue from Scratch](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/building-a-cue/)
+- [Workflow: Working with Custom Samples](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/custom-samples/)
+- [Workflow: World Scoring](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/world-scoring/)
+- [Strategy: Glossary](https://mcp-tool-shop-org.github.io/soundweave/handbook/strategy/glossary/)
 - [Example Packs](examples/)
 
 ## Security and Trust

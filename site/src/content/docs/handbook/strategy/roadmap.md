@@ -17,7 +17,7 @@ Through 19 phases of development, Soundweave evolved from a schema-only data for
 - **Automation**: Lanes, macros, envelopes, live capture
 - **Recall and Reuse**: Templates, snapshots, branches, favorites, collections, compare
 - **Studio**: Full authoring UI with 11 screens and integrated state management
-- **Validation**: Schema validation, integrity auditing, 299+ tests across 15 packages
+- **Validation**: Schema validation, integrity auditing, 663 tests across 16 packages
 
 ## Near-Term Phases
 

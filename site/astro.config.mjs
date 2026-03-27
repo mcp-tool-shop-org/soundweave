@@ -14,6 +14,7 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/mcp-tool-shop-org/soundweave' },
       ],
       sidebar: [
+        { label: 'Getting Started', autogenerate: { directory: 'handbook/getting-started' } },
         { label: 'Product', autogenerate: { directory: 'handbook/product' } },
         { label: 'Architecture', autogenerate: { directory: 'handbook/architecture' } },
         { label: 'Studio', autogenerate: { directory: 'handbook/studio' } },

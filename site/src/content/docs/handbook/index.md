@@ -10,6 +10,9 @@ The operating manual for SoundWeave — the product, the monorepo, and the philo
 
 ## Sections
 
+### [Getting Started](/soundweave/handbook/getting-started/beginners/)
+New to SoundWeave? Start here for installation, core workflow, studio navigation, and common beginner mistakes.
+
 ### [Product](/soundweave/handbook/product/)
 What SoundWeave is, what it is not, the core thesis, and the design principles that govern every decision.
 

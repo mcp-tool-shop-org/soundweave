@@ -25,7 +25,7 @@ Live capture records automation values in real time:
 
 1. **Create a capture**: `createCapture(id, name, source)`
 2. **Record points**: `recordPoint(capture, timeMs, value)`
-3. **Finalize**: `finalizeCapture(capture)`
+3. **Finalize**: `finalizeCapture(capture, laneId?)` — sorts points by time and optionally links to a lane
 4. **Apply**: `applyCaptureToLane` or `mergeCaptureIntoLane`
 5. **Optimize**: `thinCapture(capture, tolerance)` reduces point density
 
