@@ -281,7 +281,7 @@ describe("store — loadPack", () => {
     useStudioStore.getState().loadPack(minimalPack);
     const state = useStudioStore.getState();
     expect(state.pack.meta.id).toBe("tiny");
-    expect(state.section).toBe("project");
+    expect(state.section).toBe("arrangement");
     expect(state.selectedId).toBeNull();
   });
 });

@@ -43,6 +43,7 @@ import type {
 // ── Section type ──
 
 export type Section =
+  | "arrangement"
   | "project"
   | "overview"
   | "assets"
@@ -297,13 +298,13 @@ function fixSelection(
 
 export const useStudioStore = create<StudioState>((set) => ({
   pack: emptyPack,
-  section: "project",
+  section: "arrangement",
   selectedId: null,
 
   setSection: (section) => set({ section, selectedId: null }),
   setSelectedId: (selectedId) => set({ selectedId }),
 
-  loadPack: (pack) => set({ pack, section: "project", selectedId: null }),
+  loadPack: (pack) => set({ pack, section: "arrangement", selectedId: null }),
 
   // Meta
   updateMeta: (partial) =>

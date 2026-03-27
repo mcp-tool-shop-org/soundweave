@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/playback-engine",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Real-time playback, mixing, and effects for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",
@@ -34,6 +34,8 @@
   "dependencies": {
     "@soundweave/schema": "workspace:*",
     "@soundweave/audio-engine": "workspace:*",
+    "@soundweave/clip-engine": "workspace:*",
+    "@soundweave/instrument-rack": "workspace:*",
     "@soundweave/scene-mapper": "workspace:*"
   },
   "devDependencies": {

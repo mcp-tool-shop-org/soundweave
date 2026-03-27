@@ -1,9 +1,12 @@
 // ────────────────────────────────────────────
-// Scene player — play layered stems for a scene
+// Scene player — play layered stems + synth clips for a scene
 // ────────────────────────────────────────────
 
-import type { SoundtrackPack } from "@soundweave/schema";
+import type { SoundtrackPack, Clip } from "@soundweave/schema";
 import { resolveActiveLayers } from "@soundweave/audio-engine";
+import { InstrumentRack } from "@soundweave/instrument-rack";
+import { scheduleNotes, clipLengthSeconds } from "@soundweave/clip-engine";
+import { resolveClipNotes } from "@soundweave/clip-engine";
 import type { StemHandle, PlaybackListener, PlaybackEventType } from "./types.js";
 import type { AssetLoader } from "./loader.js";
 import type { Mixer } from "./mixer.js";
@@ -18,6 +21,12 @@ export class ScenePlayer {
   private soloActive = false;
   private listener: PlaybackListener | null = null;
   private mixer: Mixer | null = null;
+
+  // Clip playback state
+  private clipRack: InstrumentRack | null = null;
+  private clipGains = new Map<string, GainNode>();
+  private clipLoopTimers: number[] = [];
+  private clipStartTime = 0;
 
   constructor(ctx: AudioContext, loader: AssetLoader) {
     this.ctx = ctx;
@@ -128,13 +137,93 @@ export class ScenePlayer {
     }
 
     this.soloActive = false;
+
+    // ── Play clip layers through synth/drum voices ──
+    this.playClipLayers(pack, sceneId);
+
     this.emit("scene-change", { sceneId });
     this.emit("stem-change");
 
     return playingStemIds;
   }
 
-  /** Stop all playing stems */
+  /**
+   * Schedule clip layers for real-time playback through the instrument rack.
+   * Handles looping by re-scheduling notes at each loop boundary.
+   */
+  private playClipLayers(pack: SoundtrackPack, sceneId: string): void {
+    const scene = pack.scenes.find((s) => s.id === sceneId);
+    if (!scene) return;
+    const clipLayers = scene.clipLayers ?? [];
+    if (clipLayers.length === 0) return;
+
+    const clipsById = new Map((pack.clips ?? []).map((c) => [c.id, c]));
+
+    // Create a fresh rack
+    this.clipRack = new InstrumentRack();
+    if (pack.instruments) this.clipRack.registerPresets(pack.instruments);
+
+    this.clipStartTime = this.ctx.currentTime;
+
+    for (const ref of clipLayers) {
+      if (ref.mutedByDefault) continue;
+      const clip = clipsById.get(ref.clipId);
+      if (!clip) continue;
+      const voice = this.clipRack.getVoice(clip.instrumentId);
+      if (!voice) continue;
+
+      // Create a gain node for this clip channel
+      const gainNode = this.ctx.createGain();
+      const clipGainDb = ref.gainDb ?? clip.gainDb ?? 0;
+      gainNode.gain.value = dbToGain(clipGainDb);
+
+      if (this.mixer) {
+        const bus: BusId = clip.lane === "drums" ? "drums" : "music";
+        this.mixer.connectStem(`clip-${ref.clipId}`, gainNode, bus);
+      } else {
+        gainNode.connect(this.masterGain);
+      }
+      this.clipGains.set(ref.clipId, gainNode);
+
+      const notes = resolveClipNotes(clip, ref.variantId);
+      if (notes.length === 0) continue;
+
+      const clipDur = clipLengthSeconds(clip.bpm, clip.lengthBeats);
+
+      // Schedule the first iteration immediately
+      this.scheduleClipIteration(voice, notes, clip.bpm, gainNode, 0);
+
+      // If looping, schedule future iterations
+      if (clip.loop && clipDur > 0) {
+        const loopMs = clipDur * 1000;
+        let iteration = 1;
+        const timer = window.setInterval(() => {
+          const offset = iteration * clipDur;
+          this.scheduleClipIteration(voice, notes, clip.bpm, gainNode, offset);
+          iteration++;
+        }, loopMs);
+        this.clipLoopTimers.push(timer);
+      }
+    }
+  }
+
+  private scheduleClipIteration(
+    voice: { playNote: (ctx: AudioContext, pitch: number, velocity: number, startTime: number, duration: number, output: AudioNode) => unknown },
+    notes: readonly { pitch: number; velocity: number; startTick: number; durationTicks: number }[],
+    bpm: number,
+    output: GainNode,
+    offsetSeconds: number,
+  ): void {
+    const scheduled = scheduleNotes(notes, bpm, this.clipStartTime + offsetSeconds);
+    for (const n of scheduled) {
+      // Only schedule notes that are in the future (or very near future)
+      if (n.startTime + n.duration > this.ctx.currentTime - 0.01) {
+        voice.playNote(this.ctx, n.pitch, n.velocity, n.startTime, n.duration, output);
+      }
+    }
+  }
+
+  /** Stop all playing stems and clips */
   stopAll(): void {
     for (const handle of this.handles.values()) {
       handle.playing = false;
@@ -145,6 +234,25 @@ export class ScenePlayer {
       }
       handle.gainNode.disconnect();
     }
+
+    // Stop clip loop timers
+    for (const timer of this.clipLoopTimers) {
+      clearInterval(timer);
+    }
+    this.clipLoopTimers = [];
+
+    // Disconnect clip gain nodes
+    for (const gain of this.clipGains.values()) {
+      gain.disconnect();
+    }
+    this.clipGains.clear();
+
+    // Dispose clip rack
+    if (this.clipRack) {
+      this.clipRack.dispose();
+      this.clipRack = null;
+    }
+
     // Disconnect mixer stem routes
     if (this.mixer) {
       this.mixer.disconnectAllStems();

@@ -1,3 +1,4 @@
+export { ArrangementScreen } from "./ArrangementScreen";
 export { ProjectScreen } from "./ProjectScreen";
 export { AssetsScreen } from "./AssetsScreen";
 export { StemsScreen } from "./StemsScreen";

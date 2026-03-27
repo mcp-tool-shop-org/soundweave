@@ -748,3 +748,313 @@ describe("encodeWav", () => {
     expect(blob.size).toBe(44 + 100 * 2 * 2);
   });
 });
+
+// ── Clip rendering tests ──
+
+function createMockOscillator(): OscillatorNode {
+  return {
+    type: "sawtooth" as OscillatorType,
+    frequency: createMockAudioParam(440),
+    detune: createMockAudioParam(0),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 0,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+    onended: null,
+  } as unknown as OscillatorNode;
+}
+
+function createMockOfflineContext(): OfflineAudioContext {
+  const mockBuffer = createMockAudioBuffer();
+  return {
+    currentTime: 0,
+    state: "running",
+    sampleRate: 44100,
+    destination: {} as AudioDestinationNode,
+    length: 44100 * 32,
+    createGain: vi.fn(() => createMockGainNode()),
+    createBufferSource: vi.fn(() => createMockBufferSource()),
+    createStereoPanner: vi.fn(() => createMockStereoPanner()),
+    createBiquadFilter: vi.fn(() => createMockBiquadFilter()),
+    createDelay: vi.fn(() => createMockDelay()),
+    createConvolver: vi.fn(() => createMockConvolver()),
+    createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressor()),
+    createOscillator: vi.fn(() => createMockOscillator()),
+    createBuffer: vi.fn(
+      (channels: number, length: number, sampleRate: number) => {
+        const buf = createMockAudioBuffer();
+        Object.defineProperty(buf, "numberOfChannels", { value: channels });
+        Object.defineProperty(buf, "length", { value: length });
+        Object.defineProperty(buf, "sampleRate", { value: sampleRate });
+        return buf;
+      },
+    ),
+    startRendering: vi.fn(() => Promise.resolve(mockBuffer)),
+    resume: vi.fn(() => Promise.resolve()),
+    decodeAudioData: vi.fn(() => Promise.resolve(mockBuffer)),
+  } as unknown as OfflineAudioContext;
+}
+
+describe("CueRenderer — clip rendering", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "AudioContext",
+      vi.fn(() => createMockAudioContext()),
+    );
+    vi.stubGlobal(
+      "OfflineAudioContext",
+      vi.fn(() => createMockOfflineContext()),
+    );
+  });
+
+  it("renders a scene with clip layers (no stems)", async () => {
+    const { CueRenderer } = await import("../src/renderer.js");
+    const { AssetLoader } = await import("../src/loader.js");
+
+    const ctx = new AudioContext();
+    const loader = new AssetLoader(ctx);
+    const renderer = new CueRenderer(ctx, loader);
+
+    const pack: SoundtrackPack = {
+      meta: { id: "test", name: "Test", version: "1.0.0", schemaVersion: "1" },
+      assets: [],
+      stems: [],
+      scenes: [
+        {
+          id: "scene-clip",
+          name: "Clip Scene",
+          category: "exploration",
+          layers: [],
+          clipLayers: [
+            { clipId: "clip-bass" },
+          ],
+        },
+      ],
+      clips: [
+        {
+          id: "clip-bass",
+          name: "Bass",
+          lane: "bass",
+          instrumentId: "bass-sub",
+          bpm: 120,
+          lengthBeats: 4,
+          loop: true,
+          notes: [
+            { pitch: 40, startTick: 0, durationTicks: 480, velocity: 100 },
+            { pitch: 43, startTick: 480, durationTicks: 480, velocity: 90 },
+          ],
+        },
+      ],
+      bindings: [],
+      transitions: [],
+    };
+
+    const result = await renderer.render(pack, {
+      sceneId: "scene-clip",
+      durationSeconds: 4,
+      preset: "full-cue",
+    });
+
+    expect(result).toBeDefined();
+    expect(result.buffer).toBeDefined();
+    expect(result.sampleRate).toBe(44100);
+    expect(result.channels).toBe(2);
+  });
+
+  it("renders a scene with drums clip layer", async () => {
+    const { CueRenderer } = await import("../src/renderer.js");
+    const { AssetLoader } = await import("../src/loader.js");
+
+    const ctx = new AudioContext();
+    const loader = new AssetLoader(ctx);
+    const renderer = new CueRenderer(ctx, loader);
+
+    const pack: SoundtrackPack = {
+      meta: { id: "test", name: "Test", version: "1.0.0", schemaVersion: "1" },
+      assets: [],
+      stems: [],
+      scenes: [
+        {
+          id: "scene-drums",
+          name: "Drums",
+          category: "combat",
+          layers: [],
+          clipLayers: [
+            { clipId: "clip-drums" },
+          ],
+        },
+      ],
+      clips: [
+        {
+          id: "clip-drums",
+          name: "Drums",
+          lane: "drums",
+          instrumentId: "drums-standard",
+          bpm: 140,
+          lengthBeats: 4,
+          loop: true,
+          notes: [
+            { pitch: 36, startTick: 0, durationTicks: 120, velocity: 110 },
+            { pitch: 38, startTick: 480, durationTicks: 120, velocity: 105 },
+            { pitch: 42, startTick: 0, durationTicks: 60, velocity: 80 },
+            { pitch: 42, startTick: 240, durationTicks: 60, velocity: 70 },
+          ],
+        },
+      ],
+      bindings: [],
+      transitions: [],
+    };
+
+    const result = await renderer.render(pack, {
+      sceneId: "scene-drums",
+      durationSeconds: 4,
+      preset: "full-cue",
+    });
+
+    expect(result).toBeDefined();
+    expect(result.buffer).toBeDefined();
+  });
+
+  it("skips muted clip layers", async () => {
+    const { CueRenderer } = await import("../src/renderer.js");
+    const { AssetLoader } = await import("../src/loader.js");
+
+    const ctx = new AudioContext();
+    const loader = new AssetLoader(ctx);
+    const renderer = new CueRenderer(ctx, loader);
+
+    const pack: SoundtrackPack = {
+      meta: { id: "test", name: "Test", version: "1.0.0", schemaVersion: "1" },
+      assets: [],
+      stems: [],
+      scenes: [
+        {
+          id: "scene-muted",
+          name: "Muted",
+          category: "exploration",
+          layers: [],
+          clipLayers: [
+            { clipId: "clip-muted", mutedByDefault: true },
+          ],
+        },
+      ],
+      clips: [
+        {
+          id: "clip-muted",
+          name: "Muted Clip",
+          lane: "motif",
+          instrumentId: "lead-pluck",
+          bpm: 120,
+          lengthBeats: 4,
+          loop: true,
+          notes: [
+            { pitch: 60, startTick: 0, durationTicks: 480, velocity: 100 },
+          ],
+        },
+      ],
+      bindings: [],
+      transitions: [],
+    };
+
+    // Should render without errors (muted clips are skipped)
+    const result = await renderer.render(pack, {
+      sceneId: "scene-muted",
+      durationSeconds: 4,
+      preset: "full-cue",
+    });
+    expect(result).toBeDefined();
+  });
+
+  it("handles oneshot (non-looping) clips", async () => {
+    const { CueRenderer } = await import("../src/renderer.js");
+    const { AssetLoader } = await import("../src/loader.js");
+
+    const ctx = new AudioContext();
+    const loader = new AssetLoader(ctx);
+    const renderer = new CueRenderer(ctx, loader);
+
+    const pack: SoundtrackPack = {
+      meta: { id: "test", name: "Test", version: "1.0.0", schemaVersion: "1" },
+      assets: [],
+      stems: [],
+      scenes: [
+        {
+          id: "scene-oneshot",
+          name: "Victory",
+          category: "victory",
+          layers: [],
+          clipLayers: [
+            { clipId: "clip-fanfare" },
+          ],
+        },
+      ],
+      clips: [
+        {
+          id: "clip-fanfare",
+          name: "Fanfare",
+          lane: "motif",
+          instrumentId: "lead-square",
+          bpm: 120,
+          lengthBeats: 4,
+          loop: false,
+          notes: [
+            { pitch: 72, startTick: 0, durationTicks: 480, velocity: 110 },
+            { pitch: 76, startTick: 480, durationTicks: 960, velocity: 115 },
+          ],
+        },
+      ],
+      bindings: [],
+      transitions: [],
+    };
+
+    const result = await renderer.render(pack, {
+      sceneId: "scene-oneshot",
+      durationSeconds: 8,
+      preset: "full-cue",
+    });
+    expect(result).toBeDefined();
+    expect(result.buffer).toBeDefined();
+  });
+
+  it("defaults to 30s duration when no stems or clips provide length", async () => {
+    const { CueRenderer } = await import("../src/renderer.js");
+    const { AssetLoader } = await import("../src/loader.js");
+
+    const ctx = new AudioContext();
+    const loader = new AssetLoader(ctx);
+    const renderer = new CueRenderer(ctx, loader);
+
+    const pack: SoundtrackPack = {
+      meta: { id: "test", name: "Test", version: "1.0.0", schemaVersion: "1" },
+      assets: [],
+      stems: [],
+      scenes: [
+        {
+          id: "scene-empty",
+          name: "Empty",
+          category: "exploration",
+          layers: [],
+          clipLayers: [],
+        },
+      ],
+      clips: [],
+      bindings: [],
+      transitions: [],
+    };
+
+    const result = await renderer.render(pack, {
+      sceneId: "scene-empty",
+      preset: "full-cue",
+    });
+    expect(result).toBeDefined();
+  });
+});

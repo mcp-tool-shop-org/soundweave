@@ -2,8 +2,14 @@
 // CueRenderer — offline render to AudioBuffer + WAV
 // ────────────────────────────────────────────
 
-import type { SoundtrackPack } from "@soundweave/schema";
+import type { SoundtrackPack, Clip, SceneClipRef } from "@soundweave/schema";
 import { resolveActiveLayers } from "@soundweave/audio-engine";
+import { InstrumentRack } from "@soundweave/instrument-rack";
+import {
+  scheduleNotes,
+  clipLengthSeconds,
+  resolveClipNotes,
+} from "@soundweave/clip-engine";
 import type { RenderOptions, RenderResult, BusId } from "./mixer-types.js";
 import { Mixer } from "./mixer.js";
 import { AssetLoader } from "./loader.js";
@@ -13,6 +19,7 @@ import { dbToGain } from "./scene-player.js";
  * Renders a scene to an AudioBuffer using OfflineAudioContext.
  * Recreates the full mix graph (stems → gain → pan → buses → FX → master)
  * in an offline context and renders to a buffer.
+ * Also renders clip layers through synth/drum voices.
  */
 export class CueRenderer {
   private onlineCtx: AudioContext;
@@ -26,6 +33,7 @@ export class CueRenderer {
   /**
    * Render a scene to an AudioBuffer.
    * Uses OfflineAudioContext to produce a fully mixed audio buffer.
+   * Supports both stem layers (audio assets) and clip layers (synth voices).
    */
   async render(
     pack: SoundtrackPack,
@@ -44,8 +52,14 @@ export class CueRenderer {
       scene.layers.map((l) => [l.stemId, l]) ?? [],
     );
 
+    // Resolve clip layers
+    const clipLayers = scene.clipLayers ?? [];
+    const clipsById = new Map((pack.clips ?? []).map((c) => [c.id, c]));
+
     // Ensure assets are loaded in the online context
-    await this.loader.loadForStems(pack, plan.stemIds);
+    if (plan.stemIds.length > 0) {
+      await this.loader.loadForStems(pack, plan.stemIds);
+    }
 
     // Determine render duration
     let durationSeconds = options.durationSeconds ?? 0;
@@ -58,6 +72,13 @@ export class CueRenderer {
         if (buffer && buffer.duration > durationSeconds) {
           durationSeconds = buffer.duration;
         }
+      }
+      // Also consider clip durations
+      for (const ref of clipLayers) {
+        const clip = clipsById.get(ref.clipId);
+        if (!clip) continue;
+        const clipDur = clipLengthSeconds(clip.bpm, clip.lengthBeats);
+        if (clipDur > durationSeconds) durationSeconds = clipDur;
       }
     }
     // For loop-only, default to 30s if nothing useful found
@@ -121,6 +142,67 @@ export class CueRenderer {
       if (source.loop) {
         source.stop(durationSeconds);
       }
+    }
+
+    // Play clip layers through synth/drum voices into the offline graph
+    if (clipLayers.length > 0) {
+      const rack = new InstrumentRack();
+      if (pack.instruments) rack.registerPresets(pack.instruments);
+
+      for (const ref of clipLayers) {
+        if (ref.mutedByDefault) continue;
+
+        const clip = clipsById.get(ref.clipId);
+        if (!clip) continue;
+
+        const voice = rack.getVoice(clip.instrumentId);
+        if (!voice) continue;
+
+        const gainNode = offlineCtx.createGain();
+        const clipGainDb = ref.gainDb ?? clip.gainDb ?? 0;
+        gainNode.gain.value = dbToGain(clipGainDb);
+
+        // Route clips through the music bus (drums lane → drums bus)
+        const bus: BusId = clip.lane === "drums" ? "drums" : "music";
+        mixer.connectStem(`clip-${ref.clipId}`, gainNode, bus);
+
+        const notes = resolveClipNotes(clip, ref.variantId);
+        const clipDur = clipLengthSeconds(clip.bpm, clip.lengthBeats);
+
+        if (clip.loop && clipDur > 0) {
+          // Schedule looping clip iterations to fill the render duration
+          let offset = 0;
+          while (offset < durationSeconds) {
+            const scheduled = scheduleNotes(notes, clip.bpm, offset);
+            for (const n of scheduled) {
+              voice.playNote(
+                offlineCtx as unknown as AudioContext,
+                n.pitch,
+                n.velocity,
+                n.startTime,
+                n.duration,
+                gainNode,
+              );
+            }
+            offset += clipDur;
+          }
+        } else {
+          // One-shot clip — schedule once
+          const scheduled = scheduleNotes(notes, clip.bpm, 0);
+          for (const n of scheduled) {
+            voice.playNote(
+              offlineCtx as unknown as AudioContext,
+              n.pitch,
+              n.velocity,
+              n.startTime,
+              n.duration,
+              gainNode,
+            );
+          }
+        }
+      }
+
+      rack.dispose();
     }
 
     // Render

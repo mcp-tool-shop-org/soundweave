@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/clip-engine",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Clip sequencing, transforms, and cue scheduling for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

@@ -208,7 +208,8 @@ describe("Example pack switching", () => {
     });
     render(<Studio />);
     fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
-    expect(screen.getByText("Ready to export")).toBeInTheDocument();
+    // Minimal pack has warnings (missing categories) but is not blocked
+    expect(screen.getByRole("button", { name: "Copy JSON" })).not.toBeDisabled();
   });
 
   it("combat escalation pack exports successfully", () => {
@@ -219,7 +220,8 @@ describe("Example pack switching", () => {
     });
     render(<Studio />);
     fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
-    expect(screen.getByText("Ready to export")).toBeInTheDocument();
+    // Combat pack has warnings (missing safe-zone) but is not blocked
+    expect(screen.getByRole("button", { name: "Copy JSON" })).not.toBeDisabled();
   });
 });
 

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useStudioStore } from "./store";
 import { SidebarNav } from "./components/SidebarNav";
 import {
+  ArrangementScreen,
   ProjectScreen,
   AssetsScreen,
   StemsScreen,
@@ -22,11 +23,13 @@ import {
   AutomationScreen,
   LibraryScreen,
 } from "./screens";
-import { starterPack } from "./seed-data";
+import { synthDemoPack } from "./seed-data";
 
 function ScreenRouter() {
   const section = useStudioStore((s) => s.section);
   switch (section) {
+    case "arrangement":
+      return <ArrangementScreen />;
     case "project":
     case "overview":
       return <ProjectScreen />;
@@ -67,10 +70,14 @@ function ScreenRouter() {
 
 export default function Studio() {
   const loadPack = useStudioStore((s) => s.loadPack);
+  const packId = useStudioStore((s) => s.pack.meta.id);
 
   useEffect(() => {
-    loadPack(starterPack);
-  }, [loadPack]);
+    // Only load default pack if store is uninitialized (still has the empty "new-pack")
+    if (packId === "new-pack") {
+      loadPack(synthDemoPack);
+    }
+  }, [loadPack, packId]);
 
   return (
     <div className="app-shell">

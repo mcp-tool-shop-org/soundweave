@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/asset-index",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Pack integrity indexing and auditing for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

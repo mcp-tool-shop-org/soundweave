@@ -9,6 +9,8 @@
   "references": [
     { "path": "../schema" },
     { "path": "../audio-engine" },
+    { "path": "../clip-engine" },
+    { "path": "../instrument-rack" },
     { "path": "../scene-mapper" }
   ]
 }

@@ -4,24 +4,50 @@ import { useStudioStore, type Section } from "../store";
 import { useReview } from "../hooks";
 import { examplePacks } from "../seed-data";
 
-const navItems: { section: Section; label: string }[] = [
-  { section: "project", label: "Project" },
-  { section: "assets", label: "Assets" },
-  { section: "stems", label: "Stems" },
-  { section: "scenes", label: "Scenes" },
-  { section: "clips", label: "Clips" },
-  { section: "bindings", label: "Bindings" },
-  { section: "transitions", label: "Transitions" },
-  { section: "sample-lab", label: "Sample Lab" },
-  { section: "score-map", label: "Score Map" },
-  { section: "automation", label: "Automation" },
-  { section: "library", label: "Library" },
-  { section: "review", label: "Review" },
-  { section: "preview", label: "Preview" },
-  { section: "performance", label: "Performance" },
-  { section: "cues", label: "Cues" },
-  { section: "mixer", label: "Mixer" },
-  { section: "export", label: "Export" },
+interface NavGroup {
+  label: string;
+  items: { section: Section; label: string; icon: string }[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Create",
+    items: [
+      { section: "arrangement", label: "Arrangement", icon: "♫" },
+      { section: "clips", label: "Clip Editor", icon: "✎" },
+      { section: "scenes", label: "Scenes", icon: "◧" },
+      { section: "mixer", label: "Mixer", icon: "≡" },
+    ],
+  },
+  {
+    label: "Pack",
+    items: [
+      { section: "project", label: "Project", icon: "◉" },
+      { section: "assets", label: "Assets", icon: "♪" },
+      { section: "stems", label: "Stems", icon: "⫾" },
+      { section: "bindings", label: "Bindings", icon: "⇌" },
+      { section: "transitions", label: "Transitions", icon: "↝" },
+    ],
+  },
+  {
+    label: "Quality",
+    items: [
+      { section: "review", label: "Review", icon: "✓" },
+      { section: "export", label: "Export", icon: "↗" },
+    ],
+  },
+  {
+    label: "Advanced",
+    items: [
+      { section: "sample-lab", label: "Sample Lab", icon: "⌥" },
+      { section: "score-map", label: "Score Map", icon: "♩" },
+      { section: "automation", label: "Automation", icon: "⚙" },
+      { section: "library", label: "Library", icon: "◫" },
+      { section: "preview", label: "Preview", icon: "▷" },
+      { section: "performance", label: "Performance", icon: "⏱" },
+      { section: "cues", label: "Cues", icon: "🔔" },
+    ],
+  },
 ];
 
 export function SidebarNav() {
@@ -40,27 +66,33 @@ export function SidebarNav() {
 
   return (
     <nav className="nav-rail">
-      <div className="nav-brand">⚡ Soundweave</div>
+      <div className="nav-brand">♫ Soundweave</div>
       <div className="nav-items">
-        {navItems.map((item) => (
-          <button
-            key={item.section}
-            className={`nav-item ${section === item.section ? "active" : ""}`}
-            onClick={() => setSection(item.section)}
-          >
-            {item.label}
-            {item.section === "review" && totalWarnings > 0 && (
-              <span
-                className={`nav-badge ${audit.errors.length > 0 ? "error" : ""}`}
+        {navGroups.map((group) => (
+          <div key={group.label} className="nav-group">
+            <div className="nav-group-label">{group.label}</div>
+            {group.items.map((item) => (
+              <button
+                key={item.section}
+                className={`nav-item ${section === item.section ? "active" : ""}`}
+                onClick={() => setSection(item.section)}
               >
-                {totalWarnings}
-              </span>
-            )}
-          </button>
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+                {item.section === "review" && totalWarnings > 0 && (
+                  <span
+                    className={`nav-badge ${audit.errors.length > 0 ? "error" : ""}`}
+                  >
+                    {totalWarnings}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         ))}
       </div>
       <div className="nav-pack-switcher">
-        <label className="nav-pack-label">Example Pack</label>
+        <label className="nav-pack-label">Soundtrack Pack</label>
         <select
           className="nav-pack-select"
           value={pack.meta.id}
