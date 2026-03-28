@@ -27,12 +27,14 @@ Dependencies: `schema`, `instrument-rack`, `music-theory`
 
 ## `@soundweave/instrument-rack`
 
-Voice and instrument management.
+Voice, instrument, and modulation management.
 
-- **Synth voices** — oscillator-based with envelope and filter
-- **Drum voices** — sample-based percussion
+- **Multi-oscillator synth** — 2-4 oscillators per voice with detune, unison (up to 8 voices), and supersaw spread
+- **LFO modulation** — filter cutoff, amplitude tremolo, pitch vibrato with rate/depth/waveform control
+- **Sample voices** — SampleVoice with piano, strings, and guitar templates; pitched playback with ADSR envelopes
+- **Drum voices** — sample-based percussion with 10 pattern presets (four-on-floor, breakbeat, trap, ambient, etc.)
 - **Instrument rack** — multi-voice management, routing, disposal
-- **Factory presets** — categorized built-in presets (`bass-sub`, `drums-standard`, etc.)
+- **Factory presets** — 16 categorized presets including Deep Bass, Soft Keys, Supersaw, Ambient Texture, Warm Pad, Bright Lead
 - **Utilities** — MIDI-to-frequency, pitch-to-drum mapping
 
 Dependencies: `schema`
@@ -58,10 +60,13 @@ The real-time audio system.
 - **TransitionPlayer** — crossfade, stinger-then-switch, bar-sync transitions
 - **SequencePlayer** — ordered scene chains
 - **Mixer** — per-stem gain, pan, mute, solo, bus routing
-- **Effects** — EQ, delay, reverb, compressor with create/dispose lifecycle
+- **Effects** — 8 types: EQ, delay, reverb, compressor, chorus, distortion (soft/hard/tube), phaser, limiter; per-stem insert chains (4 slots per stem)
+- **MIDI I/O** — Standard MIDI File import and export (parser and serializer)
 - **CueRenderer** — offline rendering to audio buffer
 - **CuePlayer** — cue-level playback coordination
-- **WAV encoding** — `encodeWav` for export
+- **WAV encoding** — `encodeWav` with 24-bit and 32-bit float output at 44.1/48/96kHz
+- **Metronome** — AudioContext-scheduled click track with configurable time signature
+- **Clip preview** — real-time click-to-audition on NoteGrid
 
 Dependencies: `schema`, `audio-engine`, `scene-mapper`
 

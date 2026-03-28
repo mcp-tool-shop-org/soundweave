@@ -53,12 +53,31 @@ export function compareEntities(
   return { entityKind, labelA, labelB, same, changed, onlyA, onlyB };
 }
 
+/** Sort object keys recursively for stable JSON serialization. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return "[" + value.map(stableStringify).join(",") + "]";
+  }
+  const sorted = Object.keys(value as Record<string, unknown>)
+    .sort()
+    .map(
+      (k) =>
+        JSON.stringify(k) +
+        ":" +
+        stableStringify((value as Record<string, unknown>)[k]),
+    );
+  return "{" + sorted.join(",") + "}";
+}
+
 /** Quick check: are two entities structurally identical? */
 export function areEqual(
   a: Record<string, unknown>,
   b: Record<string, unknown>,
 ): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  return stableStringify(a) === stableStringify(b);
 }
 
 /** Count how many fields differ between two entities. */

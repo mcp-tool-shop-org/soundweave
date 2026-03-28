@@ -78,7 +78,7 @@ export function BindingsScreen() {
             <div className="entity-list-items">
               {bindings.length === 0 && (
                 <div className="empty-state">
-                  <p>No bindings yet</p>
+                  <p>No bindings yet. Define trigger conditions to make your soundtrack respond to game state.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first binding
                   </button>
@@ -119,9 +119,8 @@ export function BindingsScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateBinding(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">

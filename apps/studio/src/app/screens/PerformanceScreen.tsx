@@ -21,6 +21,7 @@ export function PerformanceScreen() {
   const transportState = usePlaybackStore((s) => s.transportState);
   const stop = usePlaybackStore((s) => s.stop);
 
+  // TODO: quantize and intensity are display-only filters; not yet wired to playback engine
   const [quantize, setQuantize] = useState<QuantizeMode>("bar");
   const [intensity, setIntensity] = useState<IntensityLevel>("mid");
 
@@ -73,10 +74,13 @@ export function PerformanceScreen() {
           </div>
           <div className="field-group" style={{ flex: 1 }} />
           <div className="field-group">
-            <label className="field-label">Pack BPM</label>
+            <label className="field-label">Tempo</label>
             <span className="text-dim" style={{ lineHeight: "32px" }}>
-              {clips.length > 0 ? clips[0].bpm : 120}
+              {clips.length > 0 ? clips[0].bpm : "\u2014"}
             </span>
+            {clips.length > 0 && (
+              <span style={{ fontSize: "0.7rem", color: "#666", marginLeft: 4 }}>(from first clip)</span>
+            )}
           </div>
         </div>
 

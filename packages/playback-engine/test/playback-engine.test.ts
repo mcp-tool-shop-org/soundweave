@@ -145,6 +145,46 @@ function createMockDynamicsCompressor(): DynamicsCompressorNode {
   } as unknown as DynamicsCompressorNode;
 }
 
+function createMockWaveShaper(): WaveShaperNode {
+  return {
+    curve: null,
+    oversample: "none",
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 1,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  } as unknown as WaveShaperNode;
+}
+
+function createMockOscillatorForCtx(): OscillatorNode {
+  return {
+    type: "sine" as OscillatorType,
+    frequency: createMockAudioParam(440),
+    detune: createMockAudioParam(0),
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+    context: null,
+    channelCount: 2,
+    channelCountMode: "max",
+    channelInterpretation: "speakers",
+    numberOfInputs: 0,
+    numberOfOutputs: 1,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+    onended: null,
+  } as unknown as OscillatorNode;
+}
+
 function createMockBufferSource(): AudioBufferSourceNode {
   return {
     buffer: null,
@@ -185,6 +225,8 @@ function createMockAudioContext(): AudioContext {
     createDelay: vi.fn(() => createMockDelay()),
     createConvolver: vi.fn(() => createMockConvolver()),
     createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressor()),
+    createOscillator: vi.fn(() => createMockOscillatorForCtx()),
+    createWaveShaper: vi.fn(() => createMockWaveShaper()),
     createBuffer: vi.fn(
       (channels: number, length: number, sampleRate: number) => {
         const buf = createMockAudioBuffer();
@@ -653,6 +695,125 @@ describe("Mixer", () => {
     mixer.dispose();
     expect(mixer.getSnapshot().stems).toHaveLength(0);
   });
+
+  // ── Per-stem FX insert tests ──
+
+  it("addStemFx adds FX to a stem and getStemFxSlots returns them", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+
+    mixer.addStemFx("stem-1", "eq");
+    mixer.addStemFx("stem-1", "delay");
+
+    const slots = mixer.getStemFxSlots("stem-1");
+    expect(slots).toHaveLength(2);
+    expect(slots[0].type).toBe("eq");
+    expect(slots[1].type).toBe("delay");
+  });
+
+  it("addStemFx enforces max 4 slots per stem", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+
+    mixer.addStemFx("stem-1", "eq");
+    mixer.addStemFx("stem-1", "delay");
+    mixer.addStemFx("stem-1", "reverb");
+    mixer.addStemFx("stem-1", "compressor");
+    mixer.addStemFx("stem-1", "chorus"); // should be rejected
+
+    expect(mixer.getStemFxSlots("stem-1")).toHaveLength(4);
+  });
+
+  it("removeStemFx removes an FX slot by index", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+
+    mixer.addStemFx("stem-1", "eq");
+    mixer.addStemFx("stem-1", "delay");
+    mixer.removeStemFx("stem-1", 0);
+
+    const slots = mixer.getStemFxSlots("stem-1");
+    expect(slots).toHaveLength(1);
+    expect(slots[0].type).toBe("delay");
+  });
+
+  it("updateStemFx updates FX parameters", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+
+    mixer.addStemFx("stem-1", "eq");
+    mixer.updateStemFx("stem-1", 0, { type: "peaking", frequency: 3000, gain: 6, Q: 2 });
+
+    const slots = mixer.getStemFxSlots("stem-1");
+    expect((slots[0].params as any).frequency).toBe(3000);
+  });
+
+  it("stem FX survive disconnect/reconnect (scene transition)", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode1 = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode1);
+    mixer.addStemFx("stem-1", "chorus");
+
+    // Disconnect (simulates scene transition)
+    mixer.disconnectStem("stem-1");
+
+    // Reconnect with a new gain node
+    const gainNode2 = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode2);
+
+    // FX should still be there
+    const slots = mixer.getStemFxSlots("stem-1");
+    expect(slots).toHaveLength(1);
+    expect(slots[0].type).toBe("chorus");
+  });
+
+  it("addStemFx works before stem is connected", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+
+    // Add FX before connecting stem
+    mixer.addStemFx("future-stem", "reverb");
+    expect(mixer.getStemFxSlots("future-stem")).toHaveLength(1);
+
+    // Now connect — FX should be wired in
+    const gainNode = createMockGainNode();
+    mixer.connectStem("future-stem", gainNode);
+    expect(mixer.getStemFxSlots("future-stem")).toHaveLength(1);
+  });
+
+  it("snapshot includes stem FX slots", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+    const gainNode = createMockGainNode();
+    mixer.connectStem("stem-1", gainNode);
+    mixer.addStemFx("stem-1", "distortion");
+
+    const snap = mixer.getSnapshot();
+    expect(snap.stems[0].fxSlots).toHaveLength(1);
+    expect(snap.stems[0].fxSlots![0].type).toBe("distortion");
+  });
+
+  it("pruneOrphanedStemFx removes FX for dead stems", async () => {
+    const { Mixer } = await import("../src/mixer.js");
+    const mixer = new Mixer(ctx, ctx.destination);
+
+    mixer.addStemFx("alive", "eq");
+    mixer.addStemFx("dead", "delay");
+
+    mixer.pruneOrphanedStemFx(new Set(["alive"]));
+
+    expect(mixer.getStemFxSlots("alive")).toHaveLength(1);
+    expect(mixer.getStemFxSlots("dead")).toHaveLength(0);
+  });
 });
 
 describe("FX factory", () => {
@@ -710,10 +871,79 @@ describe("FX factory", () => {
     // Should not throw
     disposeFxNodes(fx);
   });
+
+  it("creates chorus nodes with LFO", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_CHORUS_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "chorus", { ...DEFAULT_CHORUS_PARAMS });
+    expect(fx.type).toBe("chorus");
+    expect(fx.input).toBeDefined();
+    expect(fx.output).toBeDefined();
+    // Chorus uses: input, output, dry, wet, delay, lfo, lfoGain = 7 nodes
+    expect(fx.nodes.length).toBe(7);
+  });
+
+  it("chorus update modifies params without throwing", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_CHORUS_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "chorus", { ...DEFAULT_CHORUS_PARAMS });
+    fx.update({ rate: 2.0, depth: 8, mix: 0.7 });
+  });
+
+  it("creates distortion nodes with waveshaper", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_DISTORTION_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "distortion", { ...DEFAULT_DISTORTION_PARAMS });
+    expect(fx.type).toBe("distortion");
+    expect(fx.input).toBeDefined();
+    expect(fx.output).toBeDefined();
+    // distortion uses: input, output, dry, wet, shaper, toneFilter = 6 nodes
+    expect(fx.nodes.length).toBe(6);
+  });
+
+  it("distortion update changes curve and tone", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_DISTORTION_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "distortion", { ...DEFAULT_DISTORTION_PARAMS });
+    fx.update({ drive: 60, tone: 5000, mix: 0.8, curve: "hard-clip" });
+  });
+
+  it("creates phaser nodes with allpass stages", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_PHASER_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "phaser", { ...DEFAULT_PHASER_PARAMS });
+    expect(fx.type).toBe("phaser");
+    expect(fx.input).toBeDefined();
+    expect(fx.output).toBeDefined();
+    // phaser uses: input, output, feedbackGain, lfo + 4 allpass + 4 lfoGains = 12 nodes
+    expect(fx.nodes.length).toBe(12);
+  });
+
+  it("phaser update modifies rate and feedback", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_PHASER_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "phaser", { ...DEFAULT_PHASER_PARAMS });
+    fx.update({ rate: 1.5, depth: 0.8, stages: 4, feedback: 0.7 });
+  });
+
+  it("creates limiter nodes", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_LIMITER_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "limiter", { ...DEFAULT_LIMITER_PARAMS });
+    expect(fx.type).toBe("limiter");
+    expect(fx.nodes.length).toBe(1); // single compressor node
+  });
+
+  it("limiter update adjusts ceiling", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const { DEFAULT_LIMITER_PARAMS } = await import("../src/mixer-types.js");
+    const fx = createFxNodes(ctx, "limiter", { ...DEFAULT_LIMITER_PARAMS });
+    fx.update({ ceiling: -2 });
+  });
 });
 
 describe("mixer-types", () => {
-  it("defaultParamsForFx returns correct defaults", async () => {
+  it("defaultParamsForFx returns correct defaults for all types", async () => {
     const { defaultParamsForFx } = await import("../src/mixer-types.js");
     const eq = defaultParamsForFx("eq");
     expect(eq).toHaveProperty("frequency");
@@ -726,6 +956,21 @@ describe("mixer-types", () => {
 
     const comp = defaultParamsForFx("compressor");
     expect(comp).toHaveProperty("threshold");
+
+    const chorus = defaultParamsForFx("chorus");
+    expect(chorus).toHaveProperty("rate");
+    expect(chorus).toHaveProperty("depth");
+
+    const distortion = defaultParamsForFx("distortion");
+    expect(distortion).toHaveProperty("drive");
+    expect(distortion).toHaveProperty("curve");
+
+    const phaser = defaultParamsForFx("phaser");
+    expect(phaser).toHaveProperty("stages");
+    expect(phaser).toHaveProperty("feedback");
+
+    const limiter = defaultParamsForFx("limiter");
+    expect(limiter).toHaveProperty("ceiling");
   });
 });
 
@@ -741,7 +986,7 @@ describe("encodeWav", () => {
     Object.defineProperty(buffer, "numberOfChannels", { value: 2 });
     Object.defineProperty(buffer, "sampleRate", { value: 44100 });
 
-    const blob = encodeWav(buffer);
+    const blob = encodeWav(buffer, 16);
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toBe("audio/wav");
     // WAV header (44 bytes) + data (100 samples × 2 channels × 2 bytes)
@@ -789,6 +1034,7 @@ function createMockOfflineContext(): OfflineAudioContext {
     createConvolver: vi.fn(() => createMockConvolver()),
     createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressor()),
     createOscillator: vi.fn(() => createMockOscillator()),
+    createWaveShaper: vi.fn(() => createMockWaveShaper()),
     createBuffer: vi.fn(
       (channels: number, length: number, sampleRate: number) => {
         const buf = createMockAudioBuffer();
@@ -866,7 +1112,7 @@ describe("CueRenderer — clip rendering", () => {
 
     expect(result).toBeDefined();
     expect(result.buffer).toBeDefined();
-    expect(result.sampleRate).toBe(44100);
+    expect(result.sampleRate).toBe(48000);
     expect(result.channels).toBe(2);
   });
 
@@ -1056,5 +1302,228 @@ describe("CueRenderer — clip rendering", () => {
       preset: "full-cue",
     });
     expect(result).toBeDefined();
+  });
+});
+
+// ── Stage C: Humanization tests ──
+
+describe("B1 — AudioContext creation failure", () => {
+  it("sets error state with a helpful message when AudioContext is unavailable", async () => {
+    vi.stubGlobal(
+      "AudioContext",
+      vi.fn(() => {
+        throw new Error("AudioContext not allowed");
+      }),
+    );
+
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    expect(() => t.ensureContext()).toThrow(
+      "Audio engine unavailable",
+    );
+
+    const snap = t.getSnapshot();
+    expect(snap.transport).toBe("error");
+    expect(snap.errorMessage).toContain("Audio engine unavailable");
+  });
+});
+
+describe("B2 — AudioContext resume failure", () => {
+  it("throws a clear message when context stays suspended after resume", async () => {
+    const suspendedCtx = createMockAudioContext();
+    Object.defineProperty(suspendedCtx, "state", {
+      get: () => "suspended",
+      configurable: true,
+    });
+    (suspendedCtx.resume as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    vi.stubGlobal(
+      "AudioContext",
+      vi.fn(() => suspendedCtx),
+    );
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        headers: new Map([["content-type", "audio/wav"]]),
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+      } as unknown as Response),
+    );
+
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    await t.playScene(pack, "scene-exploration");
+
+    const snap = t.getSnapshot();
+    expect(snap.transport).toBe("error");
+    expect(snap.errorMessage).toContain("Audio blocked by browser");
+  });
+});
+
+describe("B3 — handleError stops playback", () => {
+  it("clears stem handles after error (handleError calls stop)", async () => {
+    const mockCtx = createMockAudioContext();
+    vi.stubGlobal(
+      "AudioContext",
+      vi.fn(() => mockCtx),
+    );
+
+    // First call succeeds (playScene loads), second call triggers error
+    let callCount = 0;
+    globalThis.fetch = vi.fn(() => {
+      callCount++;
+      if (callCount <= 2) {
+        return Promise.resolve({
+          ok: true,
+          arrayBuffer: () => Promise.resolve(new ArrayBuffer(10)),
+        } as Response);
+      }
+      return Promise.reject(new Error("network failure"));
+    });
+
+    const { Transport } = await import("../src/transport.js");
+    const t = new Transport();
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    // Play successfully first
+    await t.playScene(pack, "scene-exploration");
+    expect(t.getSnapshot().transport).toBe("playing");
+
+    // Force an error via switchScene to nonexistent scene (will throw internally)
+    await t.playScene(pack, "nonexistent-scene-id");
+
+    const snap = t.getSnapshot();
+    // After error, handles should be cleared because handleError now calls stop
+    expect(snap.stemHandles.size).toBe(0);
+  });
+});
+
+describe("B7 — Content-type validation in loader", () => {
+  let ctx: AudioContext;
+
+  beforeEach(() => {
+    ctx = createMockAudioContext();
+  });
+
+  it("rejects HTML responses with a clear error message", async () => {
+    const { AssetLoader } = await import("../src/loader.js");
+    const loader = new AssetLoader(ctx);
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        headers: { get: (key: string) => key === "content-type" ? "text/html; charset=utf-8" : null },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(500)),
+      } as unknown as Response),
+    );
+
+    const result = await loader.loadForStems(pack, ["stem-explore-base"]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain("expected audio content");
+    expect(result.errors[0]).toContain("text/html");
+  });
+
+  it("rejects empty responses with a clear error message", async () => {
+    const { AssetLoader } = await import("../src/loader.js");
+    const loader = new AssetLoader(ctx);
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        headers: { get: (key: string) => key === "content-type" ? "audio/wav" : null },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+      } as unknown as Response),
+    );
+
+    const result = await loader.loadForStems(pack, ["stem-explore-base"]);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toContain("empty response");
+  });
+
+  it("accepts valid audio content types", async () => {
+    const { AssetLoader } = await import("../src/loader.js");
+    const loader = new AssetLoader(ctx);
+    const pack = loadFixture(FIXTURES.STARTER_PACK) as SoundtrackPack;
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        headers: { get: (key: string) => key === "content-type" ? "audio/mpeg" : null },
+        arrayBuffer: () => Promise.resolve(new ArrayBuffer(100)),
+      } as unknown as Response),
+    );
+
+    const result = await loader.loadForStems(pack, ["stem-explore-base"]);
+    expect(result.errors).toHaveLength(0);
+    expect(result.loaded).toBe(1);
+  });
+});
+
+describe("B11 — Delay feedback safety limiter", () => {
+  let ctx: AudioContext;
+
+  beforeEach(() => {
+    ctx = createMockAudioContext();
+  });
+
+  it("clamps feedback >= 1.0 to safe maximum (0.95)", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const fx = createFxNodes(ctx, "delay", {
+      delayTime: 0.5,
+      feedback: 1.5,
+      mix: 0.5,
+    });
+
+    // The feedback gain node is the 6th node in the array (index 5)
+    const feedbackNode = fx.nodes[5] as GainNode;
+    expect(feedbackNode.gain.value).toBeLessThanOrEqual(0.95);
+  });
+
+  it("clamps feedback to 0.95 on update", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const fx = createFxNodes(ctx, "delay", {
+      delayTime: 0.5,
+      feedback: 0.5,
+      mix: 0.5,
+    });
+
+    fx.update({ delayTime: 0.5, feedback: 1.0, mix: 0.5 });
+
+    const feedbackNode = fx.nodes[5] as GainNode;
+    expect(feedbackNode.gain.value).toBeLessThanOrEqual(0.95);
+  });
+
+  it("allows normal feedback values below 0.95", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    const fx = createFxNodes(ctx, "delay", {
+      delayTime: 0.5,
+      feedback: 0.7,
+      mix: 0.5,
+    });
+
+    const feedbackNode = fx.nodes[5] as GainNode;
+    expect(feedbackNode.gain.value).toBeCloseTo(0.7);
+  });
+});
+
+describe("B12 — createFxNodes exhaustive check", () => {
+  let ctx: AudioContext;
+
+  beforeEach(() => {
+    ctx = createMockAudioContext();
+  });
+
+  it("throws for unknown FX type with a helpful message", async () => {
+    const { createFxNodes } = await import("../src/fx.js");
+    expect(() =>
+      createFxNodes(ctx, "flanger" as never, {} as never),
+    ).toThrow("Unknown FX type");
+    expect(() =>
+      createFxNodes(ctx, "flanger" as never, {} as never),
+    ).toThrow("Supported types");
   });
 });

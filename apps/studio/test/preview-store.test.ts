@@ -96,4 +96,14 @@ describe("preview store — sequence steps", () => {
     usePreviewStore.getState().resetSequence();
     expect(usePreviewStore.getState().sequenceSteps).toHaveLength(6);
   });
+
+  it("duplicateSequenceStep ignores negative index", () => {
+    usePreviewStore.getState().duplicateSequenceStep(-1);
+    expect(usePreviewStore.getState().sequenceSteps).toHaveLength(6);
+  });
+
+  it("duplicateSequenceStep ignores out-of-bounds index", () => {
+    usePreviewStore.getState().duplicateSequenceStep(100);
+    expect(usePreviewStore.getState().sequenceSteps).toHaveLength(6);
+  });
 });

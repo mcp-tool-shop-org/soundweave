@@ -21,6 +21,8 @@ Adaptive music for games needs its own workstation because:
 Soundweave is built to be a serious creative instrument. It has:
 
 - A real clip and note editor with scales, chords, motif transforms, and intensity variants
+- Multi-oscillator synthesis with unison/supersaw, LFO modulation, and sample-based instruments
+- Eight effect types with per-stem insert chains, MIDI import/export, and high-resolution WAV rendering
 - A cue structure model with timelines, section roles, and captured performances
 - A world scoring system that connects motif families, score profiles, and cue families to game regions, factions, and encounters
 - An automation system with lanes, macros, envelopes, and live capture

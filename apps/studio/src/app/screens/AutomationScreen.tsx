@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useStudioStore } from "../store";
 import type {
   AutomationParam,
@@ -23,10 +23,7 @@ const ENVELOPE_SHAPES: SectionEnvelopeShape[] = [
 ];
 
 export function AutomationScreen() {
-  const pack = useStudioStore((s) => s.pack);
   const [tab, setTab] = useState<Tab>("lanes");
-
-  if (!pack) return <p>Load a pack to use Automation.</p>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "lanes", label: "Automation Lanes" },
@@ -49,9 +46,11 @@ export function AutomationScreen() {
             onClick={() => setTab(t.key)}
             style={{
               fontWeight: tab === t.key ? "bold" : "normal",
-              borderBottom: tab === t.key ? "2px solid currentColor" : "2px solid transparent",
               background: "none",
-              border: "none",
+              borderTop: "none",
+              borderLeft: "none",
+              borderRight: "none",
+              borderBottom: tab === t.key ? "2px solid currentColor" : "2px solid transparent",
               cursor: "pointer",
               padding: "0.5rem 1rem",
             }}
@@ -80,11 +79,18 @@ function LanesPanel() {
   const lanes = pack.automationLanes ?? [];
   const scenes = pack.scenes;
   const [selectedId, setSelectedId] = useState("");
+  const [ptTime, setPtTime] = useState("");
+  const [ptVal, setPtVal] = useState("");
+
+  useEffect(() => {
+    setPtTime("");
+    setPtVal("");
+  }, [selectedId]);
 
   const lane = lanes.find((l) => l.id === selectedId);
 
   const handleCreate = () => {
-    const id = `lane-${Date.now()}`;
+    const id = `lane-${crypto.randomUUID()}`;
     addLane({
       id,
       name: "New Lane",
@@ -109,7 +115,16 @@ function LanesPanel() {
             <option key={l.id} value={l.id}>{l.name} ({l.param})</option>
           ))}
         </select>
-        <button onClick={handleCreate}>+ New Lane</button>
+        <button
+          onClick={handleCreate}
+          disabled={scenes.length === 0}
+          title={scenes.length === 0 ? "Add a scene first" : "Create a new automation lane"}
+        >
+          + New Lane
+        </button>
+        {scenes.length === 0 && (
+          <span style={{ color: "#888", fontSize: "0.8rem", alignSelf: "center" }}>Add a scene first</span>
+        )}
         {lane && (
           <button onClick={() => { deleteLane(lane.id); setSelectedId(""); }}>
             Delete
@@ -172,34 +187,34 @@ function LanesPanel() {
           <label>Add Point</label>
           <div style={{ display: "flex", gap: "0.25rem" }}>
             <input
-              id={`pt-time-${lane.id}`}
               type="number"
               min={0}
               placeholder="ms"
               style={{ width: 70 }}
+              value={ptTime}
+              onChange={(e) => setPtTime(e.target.value)}
             />
             <input
-              id={`pt-val-${lane.id}`}
               type="number"
               min={0}
               max={1}
               step={0.05}
               placeholder="val"
               style={{ width: 60 }}
+              value={ptVal}
+              onChange={(e) => setPtVal(e.target.value)}
             />
             <button
               onClick={() => {
-                const timeEl = document.getElementById(`pt-time-${lane.id}`) as HTMLInputElement;
-                const valEl = document.getElementById(`pt-val-${lane.id}`) as HTMLInputElement;
-                const timeMs = Number(timeEl.value);
-                const value = Number(valEl.value);
+                const timeMs = Number(ptTime);
+                const value = Number(ptVal);
                 if (!isNaN(timeMs) && !isNaN(value)) {
                   const pts = [...lane.points, { timeMs, value }].sort(
                     (a, b) => a.timeMs - b.timeMs,
                   );
                   updateLane(lane.id, { points: pts });
-                  timeEl.value = "";
-                  valEl.value = "";
+                  setPtTime("");
+                  setPtVal("");
                 }
               }}
             >
@@ -290,7 +305,7 @@ function MacrosPanel() {
       <h4>Macro → Parameter Mappings ({mappings.length})</h4>
       <button
         onClick={() => {
-          const id = `mm-${Date.now()}`;
+          const id = `mm-${crypto.randomUUID()}`;
           addMapping({ id, macro: "intensity", param: "volume", weight: 0.5 });
         }}
         style={{ marginBottom: "0.5rem" }}
@@ -372,7 +387,7 @@ function EnvelopesPanel() {
   const envelope = envelopes.find((e) => e.id === selectedId);
 
   const handleCreate = () => {
-    const id = `env-${Date.now()}`;
+    const id = `env-${crypto.randomUUID()}`;
     addEnvelope({
       id,
       targetId: scenes[0]?.id ?? "",
@@ -397,7 +412,16 @@ function EnvelopesPanel() {
             <option key={e.id} value={e.id}>{e.shape} ({e.position}) → {e.targetId}</option>
           ))}
         </select>
-        <button onClick={handleCreate}>+ New Envelope</button>
+        <button
+          onClick={handleCreate}
+          disabled={scenes.length === 0}
+          title={scenes.length === 0 ? "Add a scene first" : "Create a new section envelope"}
+        >
+          + New Envelope
+        </button>
+        {scenes.length === 0 && (
+          <span style={{ color: "#888", fontSize: "0.8rem", alignSelf: "center" }}>Add a scene first</span>
+        )}
         {envelope && (
           <button onClick={() => { deleteEnvelope(envelope.id); setSelectedId(""); }}>
             Delete
@@ -483,7 +507,7 @@ function CapturePanel() {
   const handleStopRecord = () => {
     setRecording(false);
     if (capturePoints.length > 0) {
-      const id = `cap-${Date.now()}`;
+      const id = `cap-${crypto.randomUUID()}`;
       addCapture({
         id,
         name: `${recordSource} capture`,

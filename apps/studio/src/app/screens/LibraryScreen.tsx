@@ -12,10 +12,7 @@ const ENTITY_KINDS: LibraryEntityKind[] = [
 ];
 
 export function LibraryScreen() {
-  const pack = useStudioStore((s) => s.pack);
   const [tab, setTab] = useState<Tab>("templates");
-
-  if (!pack) return <p>Load a pack to use the Library.</p>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "templates", label: "Templates" },

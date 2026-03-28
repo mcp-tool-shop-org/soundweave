@@ -50,7 +50,7 @@ export function AssetsScreen() {
             <div className="entity-list-items">
               {assets.length === 0 && (
                 <div className="empty-state">
-                  <p>No assets yet</p>
+                  <p>No assets yet. Add audio files to build your sound palette.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first asset
                   </button>
@@ -84,9 +84,8 @@ export function AssetsScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateAsset(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">
@@ -134,10 +133,16 @@ export function AssetsScreen() {
                     <input
                       className="field-input"
                       type="number"
+                      min={0}
                       value={selected.durationMs}
                       onChange={(e) =>
                         updateAsset(selected.id, {
                           durationMs: Number(e.target.value) || 0,
+                        })
+                      }
+                      onBlur={(e) =>
+                        updateAsset(selected.id, {
+                          durationMs: Math.max(0, Number(e.target.value) || 0),
                         })
                       }
                     />

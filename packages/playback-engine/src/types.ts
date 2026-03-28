@@ -51,7 +51,16 @@ export type PlaybackEventType =
   | "stem-change"
   | "load-progress"
   | "sequence-step"
-  | "error";
+  | "error"
+  | "cue-section"
+  | "cue-bar"
+  | "cue-end"
+  | "cue-loop"
+  | "capture-start"
+  | "capture-event"
+  | "capture-stop"
+  | "transition-start"
+  | "metronome-change";
 
 export interface PlaybackEvent {
   type: PlaybackEventType;

@@ -9,9 +9,23 @@ export function playTrimmedRegion(
   asset: AudioAsset,
   destination?: AudioNode,
 ): SampleVoice {
-  const startSec = (asset.trimStartMs ?? 0) / 1000;
-  const endSec = (asset.trimEndMs ?? asset.durationMs) / 1000;
+  const rawStart = (asset.trimStartMs ?? 0) / 1000;
+  const rawEnd = (asset.trimEndMs ?? asset.durationMs) / 1000;
+
+  // Clamp to valid buffer range when duration is available
+  const bufDur = buffer.duration;
+  const startSec = bufDur != null && isFinite(bufDur)
+    ? Math.max(0, Math.min(rawStart, bufDur))
+    : Math.max(0, rawStart);
+  const endSec = bufDur != null && isFinite(bufDur)
+    ? Math.max(startSec, Math.min(rawEnd, bufDur))
+    : Math.max(startSec, rawEnd);
   const duration = endSec - startSec;
+
+  // If duration is zero or negative after clamping, return a no-op voice
+  if (duration <= 0) {
+    return { stop: () => {} };
+  }
 
   const source = ctx.createBufferSource();
   source.buffer = buffer;
@@ -73,7 +87,9 @@ export function playSampleInstrumentNote(
   note: number,
   destination?: AudioNode,
 ): SampleVoice {
-  const rate = Math.pow(2, (note - instrument.rootNote) / 12);
+  // Clamp MIDI note to valid range [0, 127]
+  const clampedNote = Math.max(0, Math.min(127, Math.round(note)));
+  const rate = Math.pow(2, (clampedNote - instrument.rootNote) / 12);
   const dest = destination ?? ctx.destination;
 
   const source = ctx.createBufferSource();

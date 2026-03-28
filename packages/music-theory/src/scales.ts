@@ -46,7 +46,8 @@ export function noteName(midi: number): string {
   return `${NOTE_NAMES[pitchClass(midi)]}${octave(midi)}`;
 }
 
-/** Parse note name to MIDI ("C4" → 60, "A#3" → 58) */
+/** Parse note name to MIDI ("C4" → 60, "A#3" → 58).
+ *  Returns -1 if the name cannot be parsed — callers should check for this. */
 export function parseMidi(name: string): number {
   const match = name.match(/^([A-G]#?)(-?\d+)$/);
   if (!match) return -1;

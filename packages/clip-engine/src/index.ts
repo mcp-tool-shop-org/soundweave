@@ -49,7 +49,7 @@ export {
   cueSecondsToTick,
   cueTickToSeconds,
   createCaptureEvent,
-  captureToСue,
+  captureToCue,
   captureTotalBars,
   quantizeTick,
   ticksPerBar,
@@ -59,3 +59,11 @@ export {
   tickToBeat,
 } from "./cue-scheduler.js";
 export type { ResolvedSection, CuePlaybackPlan } from "./cue-scheduler.js";
+
+// Drum pattern presets
+export { getDrumPatterns, GM_DRUMS } from "./drum-patterns.js";
+export type { DrumPattern } from "./drum-patterns.js";
+
+// MIDI import/export
+export { parseMidi, midiToClipNotes, clipNotesToMidi, readVLQ, writeVLQ } from "./midi.js";
+export type { MidiFile, MidiTrack, MidiEvent, MidiEventType } from "./midi-types.js";

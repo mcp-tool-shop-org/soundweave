@@ -14,7 +14,7 @@ export function transpose(notes: readonly NoteEvent[], semitones: number): NoteE
 }
 
 /** Transpose within a key by scale degrees (diatonic transposition) */
-export function transposInKey(notes: readonly NoteEvent[], degrees: number, key: Key): NoteEvent[] {
+export function transposeInKey(notes: readonly NoteEvent[], degrees: number, key: Key): NoteEvent[] {
   return notes.map((n) => ({
     ...n,
     pitch: transposeDiatonic(n.pitch, degrees, key),

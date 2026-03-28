@@ -14,7 +14,7 @@ import type {
 import {
   resolveCuePlan,
   createCaptureEvent,
-  captureToСue,
+  captureToCue,
 } from "@soundweave/clip-engine";
 
 const SECTION_ROLES: CueSectionRole[] = ["intro", "body", "escalation", "climax", "outro", "transition"];
@@ -22,11 +22,11 @@ const INTENSITY_LEVELS: IntensityLevel[] = ["low", "mid", "high"];
 const TRANSITION_MODES: TransitionMode[] = ["immediate", "crossfade", "bar-sync", "stinger-then-switch", "cooldown-fade"];
 const EMPTY_CUES: Cue[] = [];
 
-function newCue(n: number): Cue {
+function newCue(n: number, globalBpm?: number): Cue {
   return {
     id: `cue-${n}`,
     name: `New Cue ${n}`,
-    bpm: 120,
+    bpm: globalBpm ?? 120,
     beatsPerBar: 4,
     sections: [
       { id: `sec-1`, name: "Intro", role: "intro", durationBars: 4 },
@@ -38,7 +38,7 @@ function newCue(n: number): Cue {
 
 function newSection(n: number): CueSection {
   return {
-    id: `sec-${Date.now()}-${n}`,
+    id: `sec-${crypto.randomUUID()}`,
     name: `Section ${n}`,
     role: "body",
     durationBars: 4,
@@ -60,6 +60,7 @@ export function CuesScreen() {
   const captures = useStudioStore((s) => s.captures);
   const addCapture = useStudioStore((s) => s.addCapture);
   const deleteCapture = useStudioStore((s) => s.deleteCapture);
+  const globalBpm = useStudioStore((s) => s.globalBpm);
 
   const {
     cueState,
@@ -87,7 +88,7 @@ export function CuesScreen() {
   function handleAddCue() {
     let n = cues.length + 1;
     while (cues.some((c) => c.id === `cue-${n}`)) n++;
-    addCue(newCue(n));
+    addCue(newCue(n, globalBpm));
   }
 
   function handleAddSection() {
@@ -128,19 +129,19 @@ export function CuesScreen() {
   function handleCaptureSceneLaunch(sceneId: string) {
     const bpm = selected?.bpm ?? 120;
     const beatsPerBar = selected?.beatsPerBar ?? 4;
-    const tick = cueState.currentBar * beatsPerBar * 480;
+    const tick = usePlaybackStore.getState().cueState.currentBar * beatsPerBar * 480;
     recordCaptureEvent(createCaptureEvent(tick, bpm, beatsPerBar, "scene-launch", { sceneId }));
   }
 
   function handleCaptureIntensity(level: IntensityLevel) {
     const bpm = selected?.bpm ?? 120;
     const beatsPerBar = selected?.beatsPerBar ?? 4;
-    const tick = cueState.currentBar * beatsPerBar * 480;
+    const tick = usePlaybackStore.getState().cueState.currentBar * beatsPerBar * 480;
     recordCaptureEvent(createCaptureEvent(tick, bpm, beatsPerBar, "intensity-change", { intensity: level }));
   }
 
   function handleConvertCaptureToCue(capture: typeof captures[number]) {
-    const cue = captureToСue(capture);
+    const cue = captureToCue(capture);
     addCue(cue);
     setSelectedId(cue.id);
   }

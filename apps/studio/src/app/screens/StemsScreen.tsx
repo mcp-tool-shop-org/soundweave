@@ -62,7 +62,7 @@ export function StemsScreen() {
             <div className="entity-list-items">
               {stems.length === 0 && (
                 <div className="empty-state">
-                  <p>No stems yet</p>
+                  <p>No stems yet. Create stems to layer your audio assets into scenes.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first stem
                   </button>
@@ -104,9 +104,8 @@ export function StemsScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateStem(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">

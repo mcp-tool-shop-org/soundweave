@@ -161,7 +161,7 @@ export function createCaptureEvent(
 }
 
 /** Convert a performance capture into a Cue structure */
-export function captureToСue(capture: PerformanceCapture): Cue {
+export function captureToCue(capture: PerformanceCapture): Cue {
   const { bpm, beatsPerBar, events, totalBars } = capture;
 
   // Group events by scene-launch boundaries to derive sections

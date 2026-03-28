@@ -4,10 +4,10 @@
 // ────────────────────────────────────────────
 
 import type { Clip, ClipNote, ClipVariant } from "@soundweave/schema";
-import type { Key, NoteEvent, Chord, ChordMarker, IntensityTier } from "@soundweave/music-theory";
+import type { Key, PitchClass, NoteEvent, Chord, ChordMarker, IntensityTier } from "@soundweave/music-theory";
 import {
   transpose,
-  transposInKey,
+  transposeInKey,
   invert,
   reverse,
   octaveShift,
@@ -52,7 +52,7 @@ function toClipNotes(events: readonly NoteEvent[]): ClipNote[] {
 /** Extract the Key from a clip's keyRoot + keyScale fields */
 export function clipKey(clip: Clip): Key | null {
   if (clip.keyRoot === undefined || !clip.keyScale) return null;
-  return { root: clip.keyRoot as 0, scale: clip.keyScale };
+  return { root: clip.keyRoot as PitchClass, scale: clip.keyScale };
 }
 
 // ── Motif transforms (return new notes array) ──
@@ -62,7 +62,7 @@ export function clipTranspose(notes: readonly ClipNote[], semitones: number): Cl
 }
 
 export function clipTransposeInKey(notes: readonly ClipNote[], degrees: number, key: Key): ClipNote[] {
-  return toClipNotes(transposInKey(toEvents(notes), degrees, key));
+  return toClipNotes(transposeInKey(toEvents(notes), degrees, key));
 }
 
 export function clipInvert(notes: readonly ClipNote[], pivot?: number): ClipNote[] {
@@ -195,7 +195,7 @@ export function createTransformedVariant(
   transformedNotes: ClipNote[],
 ): ClipVariant {
   return {
-    id: `var-${name.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+    id: `var-${name.toLowerCase().replace(/\s+/g, "-")}-${crypto.randomUUID()}`,
     name,
     notes: transformedNotes,
     tags: [`derived:${name.toLowerCase()}`],

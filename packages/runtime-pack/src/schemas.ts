@@ -69,17 +69,30 @@ export const RuntimeSoundtrackPackMetaSchema = z.object({
 
 // ── Runtime audio asset ──
 
-export const RuntimeAudioAssetSchema = z.object({
-  id: z.string().min(1),
-  src: z.string().min(1),
-  kind: RuntimeAudioAssetKindSchema,
-  durationMs: z.number().gt(0, "durationMs must be greater than 0"),
-  bpm: z.number().positive().optional(),
-  key: z.string().optional(),
-  loopStartMs: z.number().gte(0).optional(),
-  loopEndMs: z.number().positive().optional(),
-  tags: z.array(z.string()).optional(),
-});
+export const RuntimeAudioAssetSchema = z
+  .object({
+    id: z.string().min(1),
+    src: z.string().min(1),
+    kind: RuntimeAudioAssetKindSchema,
+    durationMs: z.number().gt(0, "durationMs must be greater than 0"),
+    bpm: z.number().positive().optional(),
+    key: z.string().optional(),
+    loopStartMs: z.number().gte(0).optional(),
+    loopEndMs: z.number().positive().optional(),
+    tags: z.array(z.string()).optional(),
+  })
+  .refine(
+    (a) => {
+      if (a.loopStartMs != null && a.loopEndMs != null) {
+        return a.loopEndMs > a.loopStartMs;
+      }
+      return true;
+    },
+    {
+      message: "loopEndMs must be greater than loopStartMs",
+      path: ["loopEndMs"],
+    },
+  );
 
 // ── Runtime stem ──
 
@@ -157,6 +170,19 @@ export const RuntimeTransitionRuleSchema = z
       message:
         "durationMs is required for crossfade and cooldown-fade transitions",
       path: ["durationMs"],
+    },
+  )
+  .refine(
+    (t) => {
+      if (t.mode === "stinger-then-switch") {
+        return t.stingerAssetId != null;
+      }
+      return true;
+    },
+    {
+      message:
+        "stingerAssetId is required for stinger-then-switch transitions",
+      path: ["stingerAssetId"],
     },
   );
 

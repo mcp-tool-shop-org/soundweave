@@ -34,7 +34,7 @@ export class DrumVoice implements InstrumentVoice {
   readonly category = "drums" as const;
 
   playNote(
-    ctx: AudioContext,
+    ctx: BaseAudioContext,
     pitch: number,
     velocity: number,
     startTime: number,
@@ -69,7 +69,7 @@ export class DrumVoice implements InstrumentVoice {
 
 // ── Individual drum synthesis ──
 
-function playKick(ctx: AudioContext, t: number, vel: number, out: AudioNode): Voice {
+function playKick(ctx: BaseAudioContext, t: number, vel: number, out: AudioNode): Voice {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
@@ -84,7 +84,7 @@ function playKick(ctx: AudioContext, t: number, vel: number, out: AudioNode): Vo
   return makeVoice(ctx, gain, osc);
 }
 
-function playSnare(ctx: AudioContext, t: number, vel: number, out: AudioNode): Voice {
+function playSnare(ctx: BaseAudioContext, t: number, vel: number, out: AudioNode): Voice {
   // Tone body
   const osc = ctx.createOscillator();
   const oscGain = ctx.createGain();
@@ -115,7 +115,7 @@ function playSnare(ctx: AudioContext, t: number, vel: number, out: AudioNode): V
   return makeVoice(ctx, oscGain, osc);
 }
 
-function playHat(ctx: AudioContext, t: number, vel: number, decay: number, out: AudioNode): Voice {
+function playHat(ctx: BaseAudioContext, t: number, vel: number, decay: number, out: AudioNode): Voice {
   const noise = createNoiseSource(ctx, t, decay + 0.01);
   const gain = ctx.createGain();
   const filter = ctx.createBiquadFilter();
@@ -131,7 +131,7 @@ function playHat(ctx: AudioContext, t: number, vel: number, decay: number, out: 
   return makeVoice(ctx, gain);
 }
 
-function playClap(ctx: AudioContext, t: number, vel: number, out: AudioNode): Voice {
+function playClap(ctx: BaseAudioContext, t: number, vel: number, out: AudioNode): Voice {
   const noise = createNoiseSource(ctx, t, 0.2);
   const gain = ctx.createGain();
   const filter = ctx.createBiquadFilter();
@@ -151,7 +151,7 @@ function playClap(ctx: AudioContext, t: number, vel: number, out: AudioNode): Vo
   return makeVoice(ctx, gain);
 }
 
-function playTom(ctx: AudioContext, t: number, vel: number, pitch: number, out: AudioNode): Voice {
+function playTom(ctx: BaseAudioContext, t: number, vel: number, pitch: number, out: AudioNode): Voice {
   const baseFreq = 80 + (pitch - 45) * 20;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -167,7 +167,7 @@ function playTom(ctx: AudioContext, t: number, vel: number, pitch: number, out: 
   return makeVoice(ctx, gain, osc);
 }
 
-function playRimshot(ctx: AudioContext, t: number, vel: number, out: AudioNode): Voice {
+function playRimshot(ctx: BaseAudioContext, t: number, vel: number, out: AudioNode): Voice {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "square";
@@ -181,7 +181,7 @@ function playRimshot(ctx: AudioContext, t: number, vel: number, out: AudioNode):
   return makeVoice(ctx, gain, osc);
 }
 
-function playCowbell(ctx: AudioContext, t: number, vel: number, out: AudioNode): Voice {
+function playCowbell(ctx: BaseAudioContext, t: number, vel: number, out: AudioNode): Voice {
   const osc1 = ctx.createOscillator();
   const osc2 = ctx.createOscillator();
   const gain = ctx.createGain();
@@ -203,7 +203,7 @@ function playCowbell(ctx: AudioContext, t: number, vel: number, out: AudioNode):
 
 // ── Helpers ──
 
-function createNoiseSource(ctx: AudioContext, _t: number, duration: number): AudioBufferSourceNode {
+function createNoiseSource(ctx: BaseAudioContext, _t: number, duration: number): AudioBufferSourceNode {
   const sampleRate = ctx.sampleRate;
   const samples = Math.ceil(sampleRate * (duration + 0.05));
   const buffer = ctx.createBuffer(1, samples, sampleRate);
@@ -216,7 +216,7 @@ function createNoiseSource(ctx: AudioContext, _t: number, duration: number): Aud
   return source;
 }
 
-function makeVoice(ctx: AudioContext, gain: GainNode, osc?: OscillatorNode): Voice {
+function makeVoice(ctx: BaseAudioContext, gain: GainNode, osc?: OscillatorNode): Voice {
   let stopped = false;
   return {
     stop: () => {

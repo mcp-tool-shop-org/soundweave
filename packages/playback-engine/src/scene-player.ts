@@ -25,8 +25,15 @@ export class ScenePlayer {
   // Clip playback state
   private clipRack: InstrumentRack | null = null;
   private clipGains = new Map<string, GainNode>();
-  private clipLoopTimers: number[] = [];
+  private clipLoopTimers: ReturnType<typeof setInterval>[] = [];
   private clipStartTime = 0;
+
+  // Lookahead scheduler state: tracks which loop iteration was last scheduled per clip
+  private clipNextIteration = new Map<string, number>();
+  /** How far ahead (seconds) the scheduler pre-schedules notes */
+  static readonly LOOKAHEAD_S = 0.2;
+  /** How often (ms) the scheduler checks for work */
+  static readonly SCHEDULE_INTERVAL_MS = 100;
 
   constructor(ctx: AudioContext, loader: AssetLoader) {
     this.ctx = ctx;
@@ -193,22 +200,30 @@ export class ScenePlayer {
       // Schedule the first iteration immediately
       this.scheduleClipIteration(voice, notes, clip.bpm, gainNode, 0);
 
-      // If looping, schedule future iterations
+      // If looping, use a lookahead scheduler locked to AudioContext.currentTime
+      // instead of setInterval-timed loops (which drift from the audio clock).
       if (clip.loop && clipDur > 0) {
-        const loopMs = clipDur * 1000;
-        let iteration = 1;
-        const timer = window.setInterval(() => {
-          const offset = iteration * clipDur;
-          this.scheduleClipIteration(voice, notes, clip.bpm, gainNode, offset);
-          iteration++;
-        }, loopMs);
+        const clipId = ref.clipId;
+        this.clipNextIteration.set(clipId, 1);
+
+        const timer = setInterval(() => {
+          let iter = this.clipNextIteration.get(clipId) ?? 1;
+          const horizon = this.ctx.currentTime + ScenePlayer.LOOKAHEAD_S;
+
+          // Pre-schedule all iterations whose start falls within the lookahead window
+          while (this.clipStartTime + iter * clipDur <= horizon) {
+            this.scheduleClipIteration(voice, notes, clip.bpm, gainNode, iter * clipDur);
+            iter++;
+          }
+          this.clipNextIteration.set(clipId, iter);
+        }, ScenePlayer.SCHEDULE_INTERVAL_MS);
         this.clipLoopTimers.push(timer);
       }
     }
   }
 
   private scheduleClipIteration(
-    voice: { playNote: (ctx: AudioContext, pitch: number, velocity: number, startTime: number, duration: number, output: AudioNode) => unknown },
+    voice: { playNote: (ctx: BaseAudioContext, pitch: number, velocity: number, startTime: number, duration: number, output: AudioNode) => unknown },
     notes: readonly { pitch: number; velocity: number; startTick: number; durationTicks: number }[],
     bpm: number,
     output: GainNode,
@@ -246,6 +261,7 @@ export class ScenePlayer {
       gain.disconnect();
     }
     this.clipGains.clear();
+    this.clipNextIteration.clear();
 
     // Dispose clip rack
     if (this.clipRack) {

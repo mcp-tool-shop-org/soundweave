@@ -2,19 +2,25 @@
 // Instrument Rack — resolves presets to voice instances
 // ────────────────────────────────────────────
 
-import type { InstrumentPreset } from "@soundweave/schema";
+import type { InstrumentPreset, SampleInstrument } from "@soundweave/schema";
 import type { InstrumentVoice, SynthParams } from "./types.js";
 import { SynthVoice } from "./synth-voice.js";
 import { DrumVoice } from "./drum-voice.js";
+import { SampleVoice } from "./sample-voice.js";
 import { FACTORY_PRESETS } from "./presets.js";
 
 /**
  * The instrument rack manages voice instances for each preset.
  * Given a preset ID, it returns the appropriate voice engine.
+ * Supports both synth presets and sample-based instruments.
  */
 export class InstrumentRack {
   private voices = new Map<string, InstrumentVoice>();
   private customPresets: InstrumentPreset[] = [];
+  private sampleInstruments = new Map<
+    string,
+    { instrument: SampleInstrument; buffer: AudioBuffer }
+  >();
 
   /** Register additional presets (e.g., from a pack) */
   registerPresets(presets: InstrumentPreset[]): void {
@@ -23,10 +29,32 @@ export class InstrumentRack {
     this.voices.clear();
   }
 
+  /**
+   * Register a sample-based instrument with its audio buffer.
+   * Sample instruments take priority over synth presets if IDs collide.
+   */
+  registerSampleInstrument(
+    id: string,
+    instrument: SampleInstrument,
+    buffer: AudioBuffer,
+  ): void {
+    this.sampleInstruments.set(id, { instrument, buffer });
+    // Clear cached voice for this ID so it gets re-created
+    this.voices.delete(id);
+  }
+
   /** Get or create a voice for a preset ID */
   getVoice(presetId: string): InstrumentVoice | null {
     const cached = this.voices.get(presetId);
     if (cached) return cached;
+
+    // Sample instruments take priority over synth presets
+    const sample = this.sampleInstruments.get(presetId);
+    if (sample) {
+      const voice = new SampleVoice(sample.instrument, sample.buffer);
+      this.voices.set(presetId, voice);
+      return voice;
+    }
 
     const preset =
       this.customPresets.find((p) => p.id === presetId) ??
@@ -45,6 +73,11 @@ export class InstrumentRack {
     for (const p of FACTORY_PRESETS) byId.set(p.id, p);
     for (const p of this.customPresets) byId.set(p.id, p);
     return Array.from(byId.values());
+  }
+
+  /** List registered sample instrument IDs */
+  listSampleInstruments(): string[] {
+    return Array.from(this.sampleInstruments.keys());
   }
 
   /** Dispose all voices */

@@ -37,6 +37,7 @@ export function resolveScene(
     if (ev.matched) {
       matched.push({ eval: ev, index: i });
       matchedBindingIds.push(ev.bindingId);
+      if (ev.stopProcessing) break;
     } else {
       rejectedBindingIds.push(ev.bindingId);
     }

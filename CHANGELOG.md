@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-03-28
+
+### Added
+- Multi-oscillator synth voices with unison/supersaw (2-4 oscillators, up to 8 unison voices)
+- LFO modulation system (filter cutoff, amplitude tremolo, pitch vibrato)
+- Sample-based instrument support (SampleVoice with piano/strings/guitar templates)
+- 4 new effects: chorus, distortion (soft/hard/tube), phaser, limiter
+- Per-stem insert effects (4 FX slots per stem)
+- MIDI import/export (Standard MIDI File parser and serializer)
+- Real-time clip preview and click-to-audition on NoteGrid
+- Metronome with AudioContext-scheduled click track
+- 10 drum pattern presets (four-on-floor, breakbeat, trap, ambient, etc.)
+- 24-bit and 32-bit float WAV export at 44.1/48/96kHz
+- Undo/redo system (50-deep stack, 500ms debounce, Ctrl+Z/Ctrl+Shift+Z)
+- Project save/load with localStorage autosave and .soundweave.json files
+- Keyboard shortcuts (Space=play, Escape=stop, 1-9=screens, ?=overlay, Ctrl+S=save)
+- Global BPM and time signature in transport bar
+- React error boundary with dark-themed recovery UI
+- 6 new synth presets: Deep Bass, Soft Keys, Supersaw, Ambient Texture + updated Warm Pad, Bright Lead
+
+### Fixed
+- 91 health findings across 5 domains (schema, engine, studio, infrastructure, CI)
+- Zod schema now includes instruments, clips, cues fields (previously silently stripped)
+- Cyrillic character in captureToСue function name
+- All 42 pre-existing test failures (SidebarNav icon regex mismatch)
+- Entity ID mutation bug across all CRUD operations
+- SHA-pinning in GitHub Actions workflows (was cosmetic, now functional)
+- AudioContext creation graceful fallback
+- Browser audio policy resume error surfacing
+- Fetch timeout (30s) and content-type validation for audio assets
+- Delay feedback safety limiter (capped at 0.95)
+- Crossfade master gain preservation
+- setInterval drift replaced with AudioContext lookahead scheduling
+- Division-by-zero guards in automation interpolation and envelope evaluation
+- Transport error cleanup (stops stale timers/nodes on error)
+
+### Changed
+- Default WAV export: 24-bit/48kHz (was 16-bit/44.1kHz)
+- Test count: 576 → 1,002
+- InstrumentVoice interface accepts BaseAudioContext (was AudioContext)
+- PlaybackEventType expanded with cue and transition events
+
 ## [1.0.4] - 2026-03-27
 
 ### Added

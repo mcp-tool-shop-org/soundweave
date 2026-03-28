@@ -1,6 +1,6 @@
 {
   "name": "@soundweave/automation",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "Lanes, macros, envelopes, and capture for SoundWeave",
   "license": "MIT",
   "author": "mcp-tool-shop-org",

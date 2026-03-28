@@ -1,6 +1,8 @@
 "use client";
 
+import { useRef, useCallback } from "react";
 import { useStudioStore } from "../store";
+import { usePlaybackStore } from "../playback-store";
 import type { Clip, ClipLane } from "@soundweave/schema";
 import { FACTORY_PRESETS } from "@soundweave/instrument-rack";
 import { NoteGrid } from "../components/NoteGrid";
@@ -31,6 +33,7 @@ import {
   createTransformedVariant,
   chordPalette,
   progressionFromDegrees,
+  getDrumPatterns,
 } from "@soundweave/clip-engine";
 import {
   SCALE_NAMES,
@@ -46,13 +49,13 @@ const EMPTY_CLIPS: never[] = [];
 const EMPTY_VARIANTS: never[] = [];
 const INTENSITY_TIERS: IntensityTier[] = ["low", "mid", "high"];
 
-function newClip(n: number): Clip {
+function newClip(n: number, globalBpm?: number): Clip {
   return {
     id: `clip-${n}`,
     name: `New Clip ${n}`,
     lane: "motif",
     instrumentId: "lead-pluck",
-    bpm: 120,
+    bpm: globalBpm ?? 120,
     lengthBeats: 4,
     notes: [],
     loop: true,
@@ -71,6 +74,20 @@ export function ClipsScreen() {
   const removeClipVariant = useStudioStore((s) => s.removeClipVariant);
   const duplicateClipAsVariant = useStudioStore((s) => s.duplicateClipAsVariant);
   const addClipVariant = useStudioStore((s) => s.addClipVariant);
+  const globalBpm = useStudioStore((s) => s.globalBpm);
+
+  // Clip preview
+  const previewClip = usePlaybackStore((s) => s.previewClip);
+  const previewingClipId = usePlaybackStore((s) => s.previewingClipId);
+
+  const bpmRef = useRef<HTMLInputElement>(null);
+  const beatsRef = useRef<HTMLInputElement>(null);
+
+  const flashBorder = useCallback((el: HTMLInputElement | null) => {
+    if (!el) return;
+    el.style.borderColor = "#d4a017";
+    setTimeout(() => { el.style.borderColor = ""; }, 600);
+  }, []);
 
   const selected = clips.find((c) => c.id === selectedId) ?? null;
   const key: Key | null = selected ? clipKey(selected) : null;
@@ -80,7 +97,7 @@ export function ClipsScreen() {
   function handleAdd() {
     let n = clips.length + 1;
     while (clips.some((c) => c.id === `clip-${n}`)) n++;
-    addClip(newClip(n));
+    addClip(newClip(n, globalBpm));
   }
 
   return (
@@ -102,7 +119,7 @@ export function ClipsScreen() {
             <div className="entity-list-items">
               {clips.length === 0 && (
                 <div className="empty-state">
-                  <p>No clips yet</p>
+                  <p>No clips yet. Create your first clip to start composing.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first clip
                   </button>
@@ -129,7 +146,19 @@ export function ClipsScreen() {
               </div>
             ) : (
               <>
-                <h3>{selected.name || selected.id}</h3>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <h3 style={{ flex: 1, margin: 0 }}>{selected.name || selected.id}</h3>
+                  {selected.notes.length > 0 && (
+                    <button
+                      className={`btn btn-sm ${previewingClipId === selected.id ? "btn-danger" : "btn-primary"}`}
+                      onClick={() => previewClip(selected)}
+                      title={previewingClipId === selected.id ? "Stop preview" : "Play clip preview"}
+                      style={previewingClipId === selected.id ? { animation: "pulse 1s infinite" } : undefined}
+                    >
+                      {previewingClipId === selected.id ? "■ Stop" : "▶ Play"}
+                    </button>
+                  )}
+                </div>
 
                 <div className="field-row">
                   <div className="field-group">
@@ -137,9 +166,8 @@ export function ClipsScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateClip(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">
@@ -197,31 +225,49 @@ export function ClipsScreen() {
                   <div className="field-group">
                     <label className="field-label">BPM</label>
                     <input
+                      ref={bpmRef}
                       className="field-input"
                       type="number"
-                      min={40}
-                      max={300}
+                      min={20}
+                      max={999}
                       value={selected.bpm}
                       onChange={(e) =>
                         updateClip(selected.id, {
                           bpm: Number(e.target.value) || 120,
                         })
                       }
+                      onBlur={() => {
+                        const raw = selected.bpm;
+                        const clamped = Math.max(20, Math.min(999, raw));
+                        if (clamped !== raw) {
+                          updateClip(selected.id, { bpm: clamped });
+                          flashBorder(bpmRef.current);
+                        }
+                      }}
                     />
                   </div>
                   <div className="field-group">
                     <label className="field-label">Length (beats)</label>
                     <input
+                      ref={beatsRef}
                       className="field-input"
                       type="number"
                       min={1}
-                      max={64}
+                      max={999}
                       value={selected.lengthBeats}
                       onChange={(e) =>
                         updateClip(selected.id, {
                           lengthBeats: Number(e.target.value) || 4,
                         })
                       }
+                      onBlur={() => {
+                        const raw = selected.lengthBeats;
+                        const clamped = Math.max(1, Math.min(999, raw));
+                        if (clamped !== raw) {
+                          updateClip(selected.id, { lengthBeats: clamped });
+                          flashBorder(beatsRef.current);
+                        }
+                      }}
                     />
                   </div>
                   <div className="field-group">
@@ -319,6 +365,23 @@ export function ClipsScreen() {
                 <div className="sub-list">
                   <div className="sub-list-header">
                     <h4>Notes ({selected.notes.length})</h4>
+                    {selected.lane === "drums" && (
+                      <select
+                        className="field-input"
+                        style={{ width: "auto", fontSize: 12, padding: "2px 6px" }}
+                        value=""
+                        onChange={(e) => {
+                          const patterns = getDrumPatterns();
+                          const pat = patterns.find((p) => p.name === e.target.value);
+                          if (pat) updateClip(selected.id, { notes: pat.notes });
+                        }}
+                      >
+                        <option value="" disabled>Load Pattern...</option>
+                        {getDrumPatterns().map((p) => (
+                          <option key={p.name} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <NoteGrid
                     clip={selected}

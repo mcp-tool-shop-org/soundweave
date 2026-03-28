@@ -173,7 +173,7 @@ export class SceneClipPlayer {
     const entry = this.entries.find((e) => e.clipId === clipId);
     if (!entry) return;
     entry.muted = muted;
-    entry.gainNode.gain.value = muted ? 0 : 1;
+    entry.gainNode.gain.value = muted ? 0 : dbToGain(entry.ref.gainDb ?? 0);
   }
 
   /** Set gain on a clip layer */

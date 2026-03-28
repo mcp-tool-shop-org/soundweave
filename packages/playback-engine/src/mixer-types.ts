@@ -3,7 +3,7 @@
 // ────────────────────────────────────────────
 
 /** Available FX types */
-export type FxType = "eq" | "delay" | "reverb" | "compressor";
+export type FxType = "eq" | "delay" | "reverb" | "compressor" | "chorus" | "distortion" | "phaser" | "limiter";
 
 /** Parameters for each FX type */
 export interface EqParams {
@@ -32,7 +32,34 @@ export interface CompressorParams {
   knee: number; // dB
 }
 
-export type FxParams = EqParams | DelayParams | ReverbParams | CompressorParams;
+export interface ChorusParams {
+  rate: number; // Hz, 0.1-10
+  depth: number; // ms, 0-20
+  mix: number; // 0-1 dry/wet
+}
+
+/** Distortion curve algorithm */
+export type DistortionCurve = "soft-clip" | "hard-clip" | "tube";
+
+export interface DistortionParams {
+  drive: number; // 0-100
+  tone: number; // Hz, filter cutoff post-distortion
+  mix: number; // 0-1 dry/wet
+  curve: DistortionCurve;
+}
+
+export interface PhaserParams {
+  rate: number; // Hz, LFO speed
+  depth: number; // 0-1
+  stages: 2 | 4 | 6; // number of allpass stages
+  feedback: number; // 0-0.95
+}
+
+export interface LimiterParams {
+  ceiling: number; // dBFS, -3 to 0
+}
+
+export type FxParams = EqParams | DelayParams | ReverbParams | CompressorParams | ChorusParams | DistortionParams | PhaserParams | LimiterParams;
 
 /** A single FX slot on a bus */
 export interface FxSlotState {
@@ -52,6 +79,7 @@ export interface StemMixState {
   muted: boolean;
   solo: boolean;
   bus: BusId;
+  fxSlots?: FxSlotState[];
 }
 
 /** Per-bus state */
@@ -72,16 +100,24 @@ export interface MixerSnapshot {
 /** Render preset type */
 export type RenderPreset = "full-cue" | "loop-only" | "preview-sequence";
 
+/** Supported WAV bit depths */
+export type WavBitDepth = 16 | 24 | 32;
+
+/** Supported sample rates */
+export type WavSampleRate = 44100 | 48000 | 96000;
+
 /** Options for cue rendering */
 export interface RenderOptions {
   preset: RenderPreset;
   sceneId: string;
   /** Duration in seconds (required for loop-only, optional for full-cue) */
   durationSeconds?: number;
-  /** Sample rate for output (default 44100) */
-  sampleRate?: number;
+  /** Sample rate for output (default 48000) */
+  sampleRate?: WavSampleRate;
   /** Number of channels (default 2) */
   channels?: number;
+  /** WAV bit depth: 16, 24, or 32 (float). Default 24. */
+  bitDepth?: WavBitDepth;
 }
 
 /** Result of a cue render */
@@ -119,6 +155,30 @@ export const DEFAULT_COMPRESSOR_PARAMS: CompressorParams = {
   knee: 30,
 };
 
+export const DEFAULT_CHORUS_PARAMS: ChorusParams = {
+  rate: 1.5,
+  depth: 5,
+  mix: 0.5,
+};
+
+export const DEFAULT_DISTORTION_PARAMS: DistortionParams = {
+  drive: 30,
+  tone: 3000,
+  mix: 0.5,
+  curve: "tube",
+};
+
+export const DEFAULT_PHASER_PARAMS: PhaserParams = {
+  rate: 0.5,
+  depth: 0.6,
+  stages: 4,
+  feedback: 0.5,
+};
+
+export const DEFAULT_LIMITER_PARAMS: LimiterParams = {
+  ceiling: -1,
+};
+
 export function defaultParamsForFx(type: FxType): FxParams {
   switch (type) {
     case "eq":
@@ -129,5 +189,13 @@ export function defaultParamsForFx(type: FxType): FxParams {
       return { ...DEFAULT_REVERB_PARAMS };
     case "compressor":
       return { ...DEFAULT_COMPRESSOR_PARAMS };
+    case "chorus":
+      return { ...DEFAULT_CHORUS_PARAMS };
+    case "distortion":
+      return { ...DEFAULT_DISTORTION_PARAMS };
+    case "phaser":
+      return { ...DEFAULT_PHASER_PARAMS };
+    case "limiter":
+      return { ...DEFAULT_LIMITER_PARAMS };
   }
 }

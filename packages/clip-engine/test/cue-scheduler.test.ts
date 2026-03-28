@@ -7,7 +7,7 @@ import {
   cueSecondsToTick,
   cueTickToSeconds,
   createCaptureEvent,
-  captureToСue,
+  captureToCue,
   captureTotalBars,
   quantizeTick,
   ticksPerBar,
@@ -197,7 +197,7 @@ describe("captureTotalBars", () => {
   });
 });
 
-describe("captureToСue (capture → cue conversion)", () => {
+describe("captureToCue (capture → cue conversion)", () => {
   it("converts scene-launch events into sections", () => {
     const tpb = ticksPerBar(120, 4);
     const capture: PerformanceCapture = {
@@ -214,7 +214,7 @@ describe("captureToСue (capture → cue conversion)", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const cue = captureToСue(capture);
+    const cue = captureToCue(capture);
     expect(cue.name).toBe("My Performance (captured)");
     expect(cue.bpm).toBe(120);
     expect(cue.sections.length).toBeGreaterThanOrEqual(3);
@@ -240,7 +240,7 @@ describe("captureToСue (capture → cue conversion)", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
     };
 
-    const cue = captureToСue(capture);
+    const cue = captureToCue(capture);
     // Should have at least 2 sections
     expect(cue.sections.length).toBeGreaterThanOrEqual(2);
   });

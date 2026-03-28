@@ -9,6 +9,8 @@ export function evaluateCondition(
   state: RuntimeMusicState,
 ): ConditionEvaluation {
   const { field, op, value } = condition;
+  // Cast to Record for dynamic field access — RuntimeMusicState fields are
+  // known at design time but looked up by the string `field` at runtime.
   const actualValue: unknown = (state as Record<string, unknown>)[field];
 
   // Missing field — always fails

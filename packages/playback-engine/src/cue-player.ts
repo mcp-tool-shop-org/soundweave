@@ -228,7 +228,7 @@ export class CuePlayer {
       name,
       bpm: this.bpm,
       beatsPerBar: this.beatsPerBar,
-      totalBars: this.totalBars || Math.max(1, ...this.captureEvents.map((e) => e.bar + 1)),
+      totalBars: this.totalBars > 0 ? this.totalBars : Math.max(1, ...this.captureEvents.map((e) => e.bar + 1)),
       events: [...this.captureEvents],
       createdAt: new Date().toISOString(),
     };

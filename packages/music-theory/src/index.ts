@@ -48,7 +48,7 @@ export {
 // Motif transforms
 export {
   transpose,
-  transposInKey,
+  transposeInKey,
   invert,
   reverse,
   octaveShift,

@@ -1,13 +1,17 @@
 // @soundweave/test-kit — fixtures, sample packs, contract tests
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { readFileSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const fixturesDir = join(__dirname, "..", "fixtures");
+const fixturesDir = resolve(join(__dirname, "..", "fixtures"));
 
 export function fixturePath(name: string): string {
-  return join(fixturesDir, name);
+  const resolved = resolve(join(fixturesDir, name));
+  if (!resolved.startsWith(fixturesDir)) {
+    throw new Error(`Path traversal detected: ${name}`);
+  }
+  return resolved;
 }
 
 export function loadFixture(name: string): unknown {

@@ -21,10 +21,7 @@ const TRANSFORMS: DerivationTransform[] = [
 ];
 
 export function ScoreMapScreen() {
-  const pack = useStudioStore((s) => s.pack);
   const [tab, setTab] = useState<Tab>("profiles");
-
-  if (!pack) return <p>Load a pack to use the Score Map.</p>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "profiles", label: "Score Profiles" },
@@ -547,9 +544,9 @@ function WorldMapPanel() {
               Delete Entry
             </button>
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-              <button onClick={() => addSnapshot({ id: `snap-${Date.now()}`, label: entry.name, entityId: entry.id, entityKind: "cue-family", data: { ...entry } as unknown as Record<string, unknown>, createdAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Snapshot</button>
-              <button onClick={() => addTemplate({ id: `tmpl-${Date.now()}`, name: `${entry.name} Template`, kind: "cue-family", data: { ...entry } as unknown as Record<string, unknown>, createdAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Save Template</button>
-              <button onClick={() => addFavorite({ id: `fav-${Date.now()}`, entityId: entry.id, entityKind: "cue-family", addedAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Favorite</button>
+              <button onClick={() => addSnapshot({ id: `snap-${Date.now()}`, label: entry.name, entityId: entry.id, entityKind: "score-profile", data: { ...entry } as unknown as Record<string, unknown>, createdAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Snapshot</button>
+              <button onClick={() => addTemplate({ id: `tmpl-${Date.now()}`, name: `${entry.name} Template`, kind: "score-profile", data: { ...entry } as unknown as Record<string, unknown>, createdAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Save Template</button>
+              <button onClick={() => addFavorite({ id: `fav-${Date.now()}`, entityId: entry.id, entityKind: "score-profile", addedAt: new Date().toISOString() })} style={{ fontSize: "0.75rem" }}>Favorite</button>
             </div>
           </div>
         )}

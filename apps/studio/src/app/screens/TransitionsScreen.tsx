@@ -92,7 +92,7 @@ export function TransitionsScreen() {
             <div className="entity-list-items">
               {transitions.length === 0 && (
                 <div className="empty-state">
-                  <p>No transitions yet</p>
+                  <p>No transitions yet. Add transitions to control how scenes flow into each other.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first transition
                   </button>
@@ -159,9 +159,8 @@ export function TransitionsScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateTransition(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">

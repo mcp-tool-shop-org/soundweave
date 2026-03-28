@@ -34,10 +34,10 @@ export interface PreviewState {
   sequenceSteps: RuntimeMusicState[];
 
   setPreviewMode: (mode: PreviewMode) => void;
-  setManualField: (field: string, value: unknown) => void;
+  setManualField: <K extends keyof RuntimeMusicState>(field: K, value: RuntimeMusicState[K]) => void;
   snapshotManualState: () => void;
   setSequenceSteps: (steps: RuntimeMusicState[]) => void;
-  updateSequenceStep: (index: number, field: string, value: unknown) => void;
+  updateSequenceStep: <K extends keyof RuntimeMusicState>(index: number, field: K, value: RuntimeMusicState[K]) => void;
   addSequenceStep: () => void;
   removeSequenceStep: (index: number) => void;
   duplicateSequenceStep: (index: number) => void;
@@ -87,6 +87,7 @@ export const usePreviewStore = create<PreviewState>((set) => ({
 
   duplicateSequenceStep: (index) =>
     set((state) => {
+      if (index < 0 || index >= state.sequenceSteps.length) return state;
       const copy = { ...state.sequenceSteps[index] };
       const steps = [...state.sequenceSteps];
       steps.splice(index + 1, 0, copy);

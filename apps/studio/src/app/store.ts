@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 import type {
   SoundtrackPack,
   SoundtrackPackMeta,
@@ -63,12 +64,50 @@ export type Section =
   | "automation"
   | "library";
 
+// ── Undo/redo constants ──
+
+export const UNDO_MAX = 50;
+const UNDO_DEBOUNCE_MS = 500;
+
 // ── Store shape ──
+
+// ── Time signature ──
+
+export interface TimeSignature {
+  numerator: number;
+  denominator: number;
+}
+
+// ── Autosave state ──
+
+export interface AutosaveState {
+  lastSavedAt: string | null;
+  dirty: boolean;
+}
 
 export interface StudioState {
   pack: SoundtrackPack;
   section: Section;
   selectedId: string | null;
+
+  // Global BPM & time signature (studio-level, serialized in save files)
+  globalBpm: number;
+  timeSignature: TimeSignature;
+  setGlobalBpm: (bpm: number) => void;
+  setTimeSignature: (ts: TimeSignature) => void;
+
+  // Autosave
+  autosave: AutosaveState;
+  _markDirty: () => void;
+  _markSaved: () => void;
+
+  // Undo/redo
+  undoStack: SoundtrackPack[];
+  redoStack: SoundtrackPack[];
+  canUndo: boolean;
+  canRedo: boolean;
+  undo: () => void;
+  redo: () => void;
 
   // Navigation
   setSection: (s: Section) => void;
@@ -296,21 +335,104 @@ function fixSelection(
 
 // ── Store ──
 
-export const useStudioStore = create<StudioState>((set) => ({
+// Debounce timer for undo pushes — collapses rapid mutations into one snapshot
+let _undoDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let _undoPending = false;
+
+/** Push current pack onto undo stack (debounced). Call before any pack mutation. */
+function _pushUndo(set: (fn: (state: StudioState) => Partial<StudioState>) => void) {
+  if (_undoPending) return; // already scheduled for this debounce window
+  _undoPending = true;
+
+  if (_undoDebounceTimer !== null) {
+    clearTimeout(_undoDebounceTimer);
+  }
+  // Capture immediately — we want the pack BEFORE the mutation
+  set((state) => {
+    const newStack = [...state.undoStack, JSON.parse(JSON.stringify(state.pack)) as SoundtrackPack];
+    if (newStack.length > UNDO_MAX) newStack.shift();
+    return {
+      undoStack: newStack,
+      redoStack: [],
+      canUndo: true,
+      canRedo: false,
+    };
+  });
+
+  _undoDebounceTimer = setTimeout(() => {
+    _undoPending = false;
+    _undoDebounceTimer = null;
+  }, UNDO_DEBOUNCE_MS);
+}
+
+export const useStudioStore = create<StudioState>()(devtools((set) => ({
   pack: emptyPack,
   section: "arrangement",
   selectedId: null,
 
+  // Global BPM & time signature
+  globalBpm: 120,
+  timeSignature: { numerator: 4, denominator: 4 },
+  setGlobalBpm: (bpm) => {
+    const clamped = Math.max(20, Math.min(999, Math.round(bpm)));
+    set({ globalBpm: clamped });
+  },
+  setTimeSignature: (ts) => set({ timeSignature: ts }),
+
+  // Autosave
+  autosave: { lastSavedAt: null, dirty: false },
+  _markDirty: () => set((s) => ({ autosave: { ...s.autosave, dirty: true } })),
+  _markSaved: () => set({ autosave: { lastSavedAt: new Date().toISOString(), dirty: false } }),
+
+  // Undo/redo state
+  undoStack: [],
+  redoStack: [],
+  canUndo: false,
+  canRedo: false,
+
+  undo: () =>
+    set((state) => {
+      if (state.undoStack.length === 0) return state;
+      const newUndoStack = [...state.undoStack];
+      const prevPack = newUndoStack.pop()!;
+      const newRedoStack = [...state.redoStack, JSON.parse(JSON.stringify(state.pack)) as SoundtrackPack];
+      return {
+        pack: prevPack,
+        undoStack: newUndoStack,
+        redoStack: newRedoStack,
+        canUndo: newUndoStack.length > 0,
+        canRedo: true,
+      };
+    }),
+
+  redo: () =>
+    set((state) => {
+      if (state.redoStack.length === 0) return state;
+      const newRedoStack = [...state.redoStack];
+      const nextPack = newRedoStack.pop()!;
+      const newUndoStack = [...state.undoStack, JSON.parse(JSON.stringify(state.pack)) as SoundtrackPack];
+      return {
+        pack: nextPack,
+        undoStack: newUndoStack,
+        redoStack: newRedoStack,
+        canUndo: true,
+        canRedo: newRedoStack.length > 0,
+      };
+    }),
+
   setSection: (section) => set({ section, selectedId: null }),
   setSelectedId: (selectedId) => set({ selectedId }),
 
-  loadPack: (pack) => set({ pack, section: "arrangement", selectedId: null }),
+  loadPack: (pack) => set({ pack, section: "arrangement", selectedId: null, undoStack: [], redoStack: [], canUndo: false, canRedo: false, autosave: { lastSavedAt: null, dirty: false } }),
 
   // Meta
-  updateMeta: (partial) =>
-    set((state) => ({
+  updateMeta: (partial) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: { ...state.pack, meta: { ...state.pack.meta, ...partial } },
-    })),
+      autosave: { ...state.autosave, dirty: true },
+    }));
+  },
 
   // Asset search / filter
   assetSearchQuery: "",
@@ -321,775 +443,619 @@ export const useStudioStore = create<StudioState>((set) => ({
   setAssetSourceFilter: (assetSourceFilter) => set({ assetSourceFilter }),
 
   // Assets
-  addAsset: (asset) =>
-    set((state) => ({
+  addAsset: (asset) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: { ...state.pack, assets: [...state.pack.assets, asset] },
       selectedId: asset.id,
-    })),
-  updateAsset: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        assets: state.pack.assets.map((a) =>
-          a.id === id ? { ...a, ...partial } : a,
-        ),
-      },
-    })),
-  deleteAsset: (id) =>
-    set((state) => {
+    }));
+  },
+  updateAsset: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
+      return {
+        pack: {
+          ...state.pack,
+          assets: state.pack.assets.map((a) =>
+            a.id === id ? { ...a, ...rest } : a,
+          ),
+        },
+      };
+    });
+  },
+  deleteAsset: (id) => {
+    _pushUndo(set);
+    return set((state) => {
       const assets = state.pack.assets.filter((a) => a.id !== id);
       return {
         pack: { ...state.pack, assets },
         selectedId: fixSelection(assets, id, state.selectedId),
       };
-    }),
+    });
+  },
 
   // Stems
-  addStem: (stem) =>
-    set((state) => ({
+  addStem: (stem) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: { ...state.pack, stems: [...state.pack.stems, stem] },
       selectedId: stem.id,
-    })),
-  updateStem: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        stems: state.pack.stems.map((s) =>
-          s.id === id ? { ...s, ...partial } : s,
-        ),
-      },
-    })),
-  deleteStem: (id) =>
-    set((state) => {
+    }));
+  },
+  updateStem: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
+      return {
+        pack: {
+          ...state.pack,
+          stems: state.pack.stems.map((s) =>
+            s.id === id ? { ...s, ...rest } : s,
+          ),
+        },
+      };
+    });
+  },
+  deleteStem: (id) => {
+    _pushUndo(set);
+    return set((state) => {
       const stems = state.pack.stems.filter((s) => s.id !== id);
       return {
         pack: { ...state.pack, stems },
         selectedId: fixSelection(stems, id, state.selectedId),
       };
-    }),
+    });
+  },
 
   // Scenes
-  addScene: (scene) =>
-    set((state) => ({
+  addScene: (scene) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: { ...state.pack, scenes: [...state.pack.scenes, scene] },
       selectedId: scene.id,
-    })),
-  updateScene: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === id ? { ...s, ...partial } : s,
-        ),
-      },
-    })),
-  deleteScene: (id) =>
-    set((state) => {
+    }));
+  },
+  updateScene: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
+      return {
+        pack: {
+          ...state.pack,
+          scenes: state.pack.scenes.map((s) =>
+            s.id === id ? { ...s, ...rest } : s,
+          ),
+        },
+      };
+    });
+  },
+  deleteScene: (id) => {
+    _pushUndo(set);
+    return set((state) => {
       const scenes = state.pack.scenes.filter((s) => s.id !== id);
       return {
         pack: { ...state.pack, scenes },
         selectedId: fixSelection(scenes, id, state.selectedId),
       };
-    }),
-  addSceneLayer: (sceneId, layer) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId ? { ...s, layers: [...s.layers, layer] } : s,
-        ),
-      },
-    })),
-  updateSceneLayer: (sceneId, layerIndex, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId
-            ? {
-                ...s,
-                layers: s.layers.map((l, i) =>
-                  i === layerIndex ? { ...l, ...partial } : l,
-                ),
-              }
-            : s,
-        ),
-      },
-    })),
-  removeSceneLayer: (sceneId, layerIndex) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId
-            ? { ...s, layers: s.layers.filter((_, i) => i !== layerIndex) }
-            : s,
-        ),
-      },
-    })),
+    });
+  },
+  addSceneLayer: (sceneId, layer) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.scenes.some((s) => s.id === sceneId)) {
+        console.warn(`[store] addSceneLayer: scene "${sceneId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          scenes: state.pack.scenes.map((s) =>
+            s.id === sceneId ? { ...s, layers: [...s.layers, layer] } : s,
+          ),
+        },
+      };
+    });
+  },
+  updateSceneLayer: (sceneId, layerIndex, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.scenes.some((s) => s.id === sceneId)) {
+        console.warn(`[store] updateSceneLayer: scene "${sceneId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          scenes: state.pack.scenes.map((s) =>
+            s.id === sceneId
+              ? {
+                  ...s,
+                  layers: s.layers.map((l, i) =>
+                    i === layerIndex ? { ...l, ...partial } : l,
+                  ),
+                }
+              : s,
+          ),
+        },
+      };
+    });
+  },
+  removeSceneLayer: (sceneId, layerIndex) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.scenes.some((s) => s.id === sceneId)) {
+        console.warn(`[store] removeSceneLayer: scene "${sceneId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          scenes: state.pack.scenes.map((s) =>
+            s.id === sceneId
+              ? { ...s, layers: s.layers.filter((_, i) => i !== layerIndex) }
+              : s,
+          ),
+        },
+      };
+    });
+  },
 
   // Bindings
-  addBinding: (binding) =>
-    set((state) => ({
+  addBinding: (binding) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: { ...state.pack, bindings: [...state.pack.bindings, binding] },
       selectedId: binding.id,
-    })),
-  updateBinding: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        bindings: state.pack.bindings.map((b) =>
-          b.id === id ? { ...b, ...partial } : b,
-        ),
-      },
-    })),
-  deleteBinding: (id) =>
-    set((state) => {
+    }));
+  },
+  updateBinding: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
+      return {
+        pack: {
+          ...state.pack,
+          bindings: state.pack.bindings.map((b) =>
+            b.id === id ? { ...b, ...rest } : b,
+          ),
+        },
+      };
+    });
+  },
+  deleteBinding: (id) => {
+    _pushUndo(set);
+    return set((state) => {
       const bindings = state.pack.bindings.filter((b) => b.id !== id);
       return {
         pack: { ...state.pack, bindings },
         selectedId: fixSelection(bindings, id, state.selectedId),
       };
-    }),
-  addBindingCondition: (bindingId, condition) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        bindings: state.pack.bindings.map((b) =>
-          b.id === bindingId
-            ? { ...b, conditions: [...b.conditions, condition] }
-            : b,
-        ),
-      },
-    })),
-  updateBindingCondition: (bindingId, conditionIndex, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        bindings: state.pack.bindings.map((b) =>
-          b.id === bindingId
-            ? {
-                ...b,
-                conditions: b.conditions.map((c, i) =>
-                  i === conditionIndex ? { ...c, ...partial } : c,
-                ),
-              }
-            : b,
-        ),
-      },
-    })),
-  removeBindingCondition: (bindingId, conditionIndex) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        bindings: state.pack.bindings.map((b) =>
-          b.id === bindingId
-            ? {
-                ...b,
-                conditions: b.conditions.filter(
-                  (_, i) => i !== conditionIndex,
-                ),
-              }
-            : b,
-        ),
-      },
-    })),
+    });
+  },
+  addBindingCondition: (bindingId, condition) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.bindings.some((b) => b.id === bindingId)) {
+        console.warn(`[store] addBindingCondition: binding "${bindingId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          bindings: state.pack.bindings.map((b) =>
+            b.id === bindingId
+              ? { ...b, conditions: [...b.conditions, condition] }
+              : b,
+          ),
+        },
+      };
+    });
+  },
+  updateBindingCondition: (bindingId, conditionIndex, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.bindings.some((b) => b.id === bindingId)) {
+        console.warn(`[store] updateBindingCondition: binding "${bindingId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          bindings: state.pack.bindings.map((b) =>
+            b.id === bindingId
+              ? {
+                  ...b,
+                  conditions: b.conditions.map((c, i) =>
+                    i === conditionIndex ? { ...c, ...partial } : c,
+                  ),
+                }
+              : b,
+          ),
+        },
+      };
+    });
+  },
+  removeBindingCondition: (bindingId, conditionIndex) => {
+    _pushUndo(set);
+    return set((state) => {
+      if (process.env.NODE_ENV !== "production" && !state.pack.bindings.some((b) => b.id === bindingId)) {
+        console.warn(`[store] removeBindingCondition: binding "${bindingId}" not found`);
+      }
+      return {
+        pack: {
+          ...state.pack,
+          bindings: state.pack.bindings.map((b) =>
+            b.id === bindingId
+              ? {
+                  ...b,
+                  conditions: b.conditions.filter(
+                    (_, i) => i !== conditionIndex,
+                  ),
+                }
+              : b,
+          ),
+        },
+      };
+    });
+  },
 
   // Transitions
-  addTransition: (transition) =>
-    set((state) => ({
+  addTransition: (transition) => {
+    _pushUndo(set);
+    return set((state) => ({
       pack: {
         ...state.pack,
         transitions: [...state.pack.transitions, transition],
       },
       selectedId: transition.id,
-    })),
-  updateTransition: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        transitions: state.pack.transitions.map((t) =>
-          t.id === id ? { ...t, ...partial } : t,
-        ),
-      },
-    })),
-  deleteTransition: (id) =>
-    set((state) => {
+    }));
+  },
+  updateTransition: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
+      return {
+        pack: {
+          ...state.pack,
+          transitions: state.pack.transitions.map((t) =>
+            t.id === id ? { ...t, ...rest } : t,
+          ),
+        },
+      };
+    });
+  },
+  deleteTransition: (id) => {
+    _pushUndo(set);
+    return set((state) => {
       const transitions = state.pack.transitions.filter((t) => t.id !== id);
       return {
         pack: { ...state.pack, transitions },
         selectedId: fixSelection(transitions, id, state.selectedId),
       };
-    }),
+    });
+  },
 
   // Clips
-  addClip: (clip) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: [...(state.pack.clips ?? []), clip],
-      },
+  addClip: (clip) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: [...(state.pack.clips ?? []), clip] },
       selectedId: clip.id,
-    })),
-  updateClip: (id, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === id ? { ...c, ...partial } : c,
-        ),
-      },
-    })),
-  deleteClip: (id) =>
-    set((state) => {
-      const clips = (state.pack.clips ?? []).filter((c) => c.id !== id);
+    }));
+  },
+  updateClip: (id, partial) => {
+    _pushUndo(set);
+    return set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, ...rest } = partial;
       return {
-        pack: { ...state.pack, clips },
-        selectedId: fixSelection(clips, id, state.selectedId),
+        pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === id ? { ...c, ...rest } : c) },
       };
-    }),
-  addClipNote: (clipId, note) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId ? { ...c, notes: [...c.notes, note] } : c,
-        ),
-      },
-    })),
-  updateClipNote: (clipId, noteIndex, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId
-            ? {
-                ...c,
-                notes: c.notes.map((n, i) =>
-                  i === noteIndex ? { ...n, ...partial } : n,
-                ),
-              }
-            : c,
-        ),
-      },
-    })),
-  removeClipNote: (clipId, noteIndex) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId
-            ? { ...c, notes: c.notes.filter((_, i) => i !== noteIndex) }
-            : c,
-        ),
-      },
-    })),
+    });
+  },
+  deleteClip: (id) => {
+    _pushUndo(set);
+    return set((state) => {
+      const clips = (state.pack.clips ?? []).filter((c) => c.id !== id);
+      return { pack: { ...state.pack, clips }, selectedId: fixSelection(clips, id, state.selectedId) };
+    });
+  },
+  addClipNote: (clipId, note) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, notes: [...c.notes, note] } : c) },
+    }));
+  },
+  updateClipNote: (clipId, noteIndex, partial) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, notes: c.notes.map((n, i) => i === noteIndex ? { ...n, ...partial } : n) } : c) },
+    }));
+  },
+  removeClipNote: (clipId, noteIndex) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, notes: c.notes.filter((_, i) => i !== noteIndex) } : c) },
+    }));
+  },
 
   // Scene clip layers
-  addSceneClipLayer: (sceneId, ref) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId
-            ? { ...s, clipLayers: [...(s.clipLayers ?? []), ref] }
-            : s,
-        ),
-      },
-    })),
-  updateSceneClipLayer: (sceneId, layerIndex, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId
-            ? {
-                ...s,
-                clipLayers: (s.clipLayers ?? []).map((l, i) =>
-                  i === layerIndex ? { ...l, ...partial } : l,
-                ),
-              }
-            : s,
-        ),
-      },
-    })),
-  removeSceneClipLayer: (sceneId, layerIndex) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scenes: state.pack.scenes.map((s) =>
-          s.id === sceneId
-            ? {
-                ...s,
-                clipLayers: (s.clipLayers ?? []).filter(
-                  (_, i) => i !== layerIndex,
-                ),
-              }
-            : s,
-        ),
-      },
-    })),
+  addSceneClipLayer: (sceneId, ref) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, scenes: state.pack.scenes.map((s) => s.id === sceneId ? { ...s, clipLayers: [...(s.clipLayers ?? []), ref] } : s) },
+    }));
+  },
+  updateSceneClipLayer: (sceneId, layerIndex, partial) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, scenes: state.pack.scenes.map((s) => s.id === sceneId ? { ...s, clipLayers: (s.clipLayers ?? []).map((l, i) => i === layerIndex ? { ...l, ...partial } : l) } : s) },
+    }));
+  },
+  removeSceneClipLayer: (sceneId, layerIndex) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, scenes: state.pack.scenes.map((s) => s.id === sceneId ? { ...s, clipLayers: (s.clipLayers ?? []).filter((_, i) => i !== layerIndex) } : s) },
+    }));
+  },
 
   // Clip variants
-  addClipVariant: (clipId, variant) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId
-            ? { ...c, variants: [...(c.variants ?? []), variant] }
-            : c,
-        ),
-      },
-    })),
-  updateClipVariant: (clipId, variantId, partial) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId
-            ? {
-                ...c,
-                variants: (c.variants ?? []).map((v) =>
-                  v.id === variantId ? { ...v, ...partial } : v,
-                ),
-              }
-            : c,
-        ),
-      },
-    })),
-  removeClipVariant: (clipId, variantId) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) =>
-          c.id === clipId
-            ? {
-                ...c,
-                variants: (c.variants ?? []).filter((v) => v.id !== variantId),
-              }
-            : c,
-        ),
-      },
-    })),
-  duplicateClipAsVariant: (clipId, variantName) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        clips: (state.pack.clips ?? []).map((c) => {
-          if (c.id !== clipId) return c;
-          const variant: ClipVariant = {
-            id: `var-${Date.now()}`,
-            name: variantName,
-            notes: [...c.notes],
-          };
-          return { ...c, variants: [...(c.variants ?? []), variant] };
-        }),
-      },
-    })),
+  addClipVariant: (clipId, variant) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, variants: [...(c.variants ?? []), variant] } : c) },
+    }));
+  },
+  updateClipVariant: (clipId, variantId, partial) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, variants: (c.variants ?? []).map((v) => v.id === variantId ? { ...v, ...partial } : v) } : c) },
+    }));
+  },
+  removeClipVariant: (clipId, variantId) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => c.id === clipId ? { ...c, variants: (c.variants ?? []).filter((v) => v.id !== variantId) } : c) },
+    }));
+  },
+  duplicateClipAsVariant: (clipId, variantName) => {
+    _pushUndo(set);
+    return set((state) => ({
+      pack: { ...state.pack, clips: (state.pack.clips ?? []).map((c) => {
+        if (c.id !== clipId) return c;
+        const variant: ClipVariant = { id: `var-${crypto.randomUUID()}`, name: variantName, notes: [...c.notes] };
+        return { ...c, variants: [...(c.variants ?? []), variant] };
+      }) },
+    }));
+  },
 
   // ── Cue actions ──
-  addCue: (cue) => set((state) => ({
-    pack: { ...state.pack, cues: [...(state.pack.cues ?? []), cue] },
-    selectedId: cue.id,
-  })),
-  updateCue: (id, partial) => set((state) => ({
+  addCue: (cue) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, cues: [...(state.pack.cues ?? []), cue] }, selectedId: cue.id,
+  })); },
+  updateCue: (id, partial) => { _pushUndo(set); return set((state) => ({
     pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === id ? { ...c, ...partial } : c) },
-  })),
-  deleteCue: (id) => set((state) => {
+  })); },
+  deleteCue: (id) => { _pushUndo(set); return set((state) => {
     const cues = (state.pack.cues ?? []).filter((c) => c.id !== id);
     return { pack: { ...state.pack, cues }, selectedId: fixSelection(cues, id, state.selectedId) };
-  }),
-  addCueSection: (cueId, section) => set((state) => ({
+  }); },
+  addCueSection: (cueId, section) => { _pushUndo(set); return set((state) => ({
     pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: [...c.sections, section] } : c) },
-  })),
-  updateCueSection: (cueId, sectionId, partial) => set((state) => ({
+  })); },
+  updateCueSection: (cueId, sectionId, partial) => { _pushUndo(set); return set((state) => ({
     pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: c.sections.map((s) => s.id === sectionId ? { ...s, ...partial } : s) } : c) },
-  })),
-  removeCueSection: (cueId, sectionId) => set((state) => ({
+  })); },
+  removeCueSection: (cueId, sectionId) => { _pushUndo(set); return set((state) => ({
     pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => c.id === cueId ? { ...c, sections: c.sections.filter((s) => s.id !== sectionId) } : c) },
-  })),
-  reorderCueSections: (cueId, sectionIds) => set((state) => ({
+  })); },
+  reorderCueSections: (cueId, sectionIds) => { _pushUndo(set); return set((state) => ({
     pack: { ...state.pack, cues: (state.pack.cues ?? []).map((c) => {
       if (c.id !== cueId) return c;
       const byId = new Map(c.sections.map((s) => [s.id, s]));
       const reordered = sectionIds.map((id) => byId.get(id)).filter(Boolean) as CueSection[];
       return { ...c, sections: reordered };
     }) },
-  })),
+  })); },
 
-  // ── Capture actions ──
+  // ── Capture actions (not pack mutations — no undo) ──
   captures: [],
   addCapture: (capture) => set((state) => ({ captures: [...state.captures, capture] })),
   deleteCapture: (id) => set((state) => ({ captures: state.captures.filter((c) => c.id !== id) })),
 
   // ── Sample slices ──
-  addSampleSlice: (slice) =>
-    set((state) => ({
-      pack: { ...state.pack, sampleSlices: [...(state.pack.sampleSlices ?? []), slice] },
-    })),
-  updateSampleSlice: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleSlices: (state.pack.sampleSlices ?? []).map((sl) =>
-          sl.id === id ? { ...sl, ...update } : sl,
-        ),
-      },
-    })),
-  deleteSampleSlice: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleSlices: (state.pack.sampleSlices ?? []).filter((sl) => sl.id !== id),
-      },
-    })),
+  addSampleSlice: (slice) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleSlices: [...(state.pack.sampleSlices ?? []), slice] },
+  })); },
+  updateSampleSlice: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleSlices: (state.pack.sampleSlices ?? []).map((sl) => sl.id === id ? { ...sl, ...update } : sl) },
+  })); },
+  deleteSampleSlice: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleSlices: (state.pack.sampleSlices ?? []).filter((sl) => sl.id !== id) },
+  })); },
 
   // ── Sample kits ──
-  addSampleKit: (kit) =>
-    set((state) => ({
-      pack: { ...state.pack, sampleKits: [...(state.pack.sampleKits ?? []), kit] },
-    })),
-  updateSampleKit: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleKits: (state.pack.sampleKits ?? []).map((k) =>
-          k.id === id ? { ...k, ...update } : k,
-        ),
-      },
-    })),
-  deleteSampleKit: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleKits: (state.pack.sampleKits ?? []).filter((k) => k.id !== id),
-      },
-    })),
-  addSampleKitSlot: (kitId, slot) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleKits: (state.pack.sampleKits ?? []).map((k) =>
-          k.id === kitId ? { ...k, slots: [...k.slots, slot] } : k,
-        ),
-      },
-    })),
-  updateSampleKitSlot: (kitId, pitch, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleKits: (state.pack.sampleKits ?? []).map((k) =>
-          k.id === kitId
-            ? {
-                ...k,
-                slots: k.slots.map((sl) =>
-                  sl.pitch === pitch ? { ...sl, ...update } : sl,
-                ),
-              }
-            : k,
-        ),
-      },
-    })),
-  removeSampleKitSlot: (kitId, pitch) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleKits: (state.pack.sampleKits ?? []).map((k) =>
-          k.id === kitId
-            ? { ...k, slots: k.slots.filter((sl) => sl.pitch !== pitch) }
-            : k,
-        ),
-      },
-    })),
+  addSampleKit: (kit) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: [...(state.pack.sampleKits ?? []), kit] },
+  })); },
+  updateSampleKit: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: (state.pack.sampleKits ?? []).map((k) => k.id === id ? { ...k, ...update } : k) },
+  })); },
+  deleteSampleKit: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: (state.pack.sampleKits ?? []).filter((k) => k.id !== id) },
+  })); },
+  addSampleKitSlot: (kitId, slot) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: (state.pack.sampleKits ?? []).map((k) => k.id === kitId ? { ...k, slots: [...k.slots, slot] } : k) },
+  })); },
+  updateSampleKitSlot: (kitId, pitch, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: (state.pack.sampleKits ?? []).map((k) => k.id === kitId ? { ...k, slots: k.slots.map((sl) => sl.pitch === pitch ? { ...sl, ...update } : sl) } : k) },
+  })); },
+  removeSampleKitSlot: (kitId, pitch) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleKits: (state.pack.sampleKits ?? []).map((k) => k.id === kitId ? { ...k, slots: k.slots.filter((sl) => sl.pitch !== pitch) } : k) },
+  })); },
 
   // ── Sample instruments ──
-  addSampleInstrument: (inst) =>
-    set((state) => ({
-      pack: { ...state.pack, sampleInstruments: [...(state.pack.sampleInstruments ?? []), inst] },
-    })),
-  updateSampleInstrument: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleInstruments: (state.pack.sampleInstruments ?? []).map((i) =>
-          i.id === id ? { ...i, ...update } : i,
-        ),
-      },
-    })),
-  deleteSampleInstrument: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sampleInstruments: (state.pack.sampleInstruments ?? []).filter((i) => i.id !== id),
-      },
-    })),
+  addSampleInstrument: (inst) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleInstruments: [...(state.pack.sampleInstruments ?? []), inst] },
+  })); },
+  updateSampleInstrument: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleInstruments: (state.pack.sampleInstruments ?? []).map((i) => i.id === id ? { ...i, ...update } : i) },
+  })); },
+  deleteSampleInstrument: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sampleInstruments: (state.pack.sampleInstruments ?? []).filter((i) => i.id !== id) },
+  })); },
 
   // ── Motif families ──
-  addMotifFamily: (family) =>
-    set((state) => ({
-      pack: { ...state.pack, motifFamilies: [...(state.pack.motifFamilies ?? []), family] },
-    })),
-  updateMotifFamily: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        motifFamilies: (state.pack.motifFamilies ?? []).map((f) =>
-          f.id === id ? { ...f, ...update } : f,
-        ),
-      },
-    })),
-  deleteMotifFamily: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        motifFamilies: (state.pack.motifFamilies ?? []).filter((f) => f.id !== id),
-      },
-    })),
+  addMotifFamily: (family) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, motifFamilies: [...(state.pack.motifFamilies ?? []), family] },
+  })); },
+  updateMotifFamily: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, motifFamilies: (state.pack.motifFamilies ?? []).map((f) => f.id === id ? { ...f, ...update } : f) },
+  })); },
+  deleteMotifFamily: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, motifFamilies: (state.pack.motifFamilies ?? []).filter((f) => f.id !== id) },
+  })); },
 
   // ── Score profiles ──
-  addScoreProfile: (profile) =>
-    set((state) => ({
-      pack: { ...state.pack, scoreProfiles: [...(state.pack.scoreProfiles ?? []), profile] },
-    })),
-  updateScoreProfile: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scoreProfiles: (state.pack.scoreProfiles ?? []).map((pr) =>
-          pr.id === id ? { ...pr, ...update } : pr,
-        ),
-      },
-    })),
-  deleteScoreProfile: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scoreProfiles: (state.pack.scoreProfiles ?? []).filter((pr) => pr.id !== id),
-      },
-    })),
+  addScoreProfile: (profile) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreProfiles: [...(state.pack.scoreProfiles ?? []), profile] },
+  })); },
+  updateScoreProfile: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreProfiles: (state.pack.scoreProfiles ?? []).map((pr) => pr.id === id ? { ...pr, ...update } : pr) },
+  })); },
+  deleteScoreProfile: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreProfiles: (state.pack.scoreProfiles ?? []).filter((pr) => pr.id !== id) },
+  })); },
 
   // ── Cue families ──
-  addCueFamily: (family) =>
-    set((state) => ({
-      pack: { ...state.pack, cueFamilies: [...(state.pack.cueFamilies ?? []), family] },
-    })),
-  updateCueFamily: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        cueFamilies: (state.pack.cueFamilies ?? []).map((f) =>
-          f.id === id ? { ...f, ...update } : f,
-        ),
-      },
-    })),
-  deleteCueFamily: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        cueFamilies: (state.pack.cueFamilies ?? []).filter((f) => f.id !== id),
-      },
-    })),
+  addCueFamily: (family) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, cueFamilies: [...(state.pack.cueFamilies ?? []), family] },
+  })); },
+  updateCueFamily: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, cueFamilies: (state.pack.cueFamilies ?? []).map((f) => f.id === id ? { ...f, ...update } : f) },
+  })); },
+  deleteCueFamily: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, cueFamilies: (state.pack.cueFamilies ?? []).filter((f) => f.id !== id) },
+  })); },
 
   // ── Score map ──
-  addScoreMapEntry: (entry) =>
-    set((state) => ({
-      pack: { ...state.pack, scoreMap: [...(state.pack.scoreMap ?? []), entry] },
-    })),
-  updateScoreMapEntry: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scoreMap: (state.pack.scoreMap ?? []).map((e) =>
-          e.id === id ? { ...e, ...update } : e,
-        ),
-      },
-    })),
-  deleteScoreMapEntry: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        scoreMap: (state.pack.scoreMap ?? []).filter((e) => e.id !== id),
-      },
-    })),
+  addScoreMapEntry: (entry) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreMap: [...(state.pack.scoreMap ?? []), entry] },
+  })); },
+  updateScoreMapEntry: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreMap: (state.pack.scoreMap ?? []).map((e) => e.id === id ? { ...e, ...update } : e) },
+  })); },
+  deleteScoreMapEntry: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, scoreMap: (state.pack.scoreMap ?? []).filter((e) => e.id !== id) },
+  })); },
 
   // ── Derivations ──
-  addDerivation: (record) =>
-    set((state) => ({
-      pack: { ...state.pack, derivations: [...(state.pack.derivations ?? []), record] },
-    })),
-  deleteDerivation: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        derivations: (state.pack.derivations ?? []).filter((d) => d.id !== id),
-      },
-    })),
+  addDerivation: (record) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, derivations: [...(state.pack.derivations ?? []), record] },
+  })); },
+  deleteDerivation: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, derivations: (state.pack.derivations ?? []).filter((d) => d.id !== id) },
+  })); },
 
   // ── Automation lanes ──
-  addAutomationLane: (lane) =>
-    set((state) => ({
-      pack: { ...state.pack, automationLanes: [...(state.pack.automationLanes ?? []), lane] },
-    })),
-  updateAutomationLane: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        automationLanes: (state.pack.automationLanes ?? []).map((l) =>
-          l.id === id ? { ...l, ...update } : l,
-        ),
-      },
-    })),
-  deleteAutomationLane: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        automationLanes: (state.pack.automationLanes ?? []).filter((l) => l.id !== id),
-      },
-    })),
+  addAutomationLane: (lane) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, automationLanes: [...(state.pack.automationLanes ?? []), lane] },
+  })); },
+  updateAutomationLane: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, automationLanes: (state.pack.automationLanes ?? []).map((l) => l.id === id ? { ...l, ...update } : l) },
+  })); },
+  deleteAutomationLane: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, automationLanes: (state.pack.automationLanes ?? []).filter((l) => l.id !== id) },
+  })); },
 
   // ── Macro mappings ──
-  addMacroMapping: (mapping) =>
-    set((state) => ({
-      pack: { ...state.pack, macroMappings: [...(state.pack.macroMappings ?? []), mapping] },
-    })),
-  updateMacroMapping: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        macroMappings: (state.pack.macroMappings ?? []).map((m) =>
-          m.id === id ? { ...m, ...update } : m,
-        ),
-      },
-    })),
-  deleteMacroMapping: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        macroMappings: (state.pack.macroMappings ?? []).filter((m) => m.id !== id),
-      },
-    })),
+  addMacroMapping: (mapping) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, macroMappings: [...(state.pack.macroMappings ?? []), mapping] },
+  })); },
+  updateMacroMapping: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, macroMappings: (state.pack.macroMappings ?? []).map((m) => m.id === id ? { ...m, ...update } : m) },
+  })); },
+  deleteMacroMapping: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, macroMappings: (state.pack.macroMappings ?? []).filter((m) => m.id !== id) },
+  })); },
 
-  // ── Macro state ──
+  // ── Macro state (not a pack mutation — no undo) ──
   macroState: { intensity: 0.5, tension: 0.5, brightness: 0.5, space: 0.5 },
   setMacroState: (update) =>
     set((s) => ({ macroState: { ...s.macroState, ...update } })),
 
   // ── Section envelopes ──
-  addSectionEnvelope: (envelope) =>
-    set((state) => ({
-      pack: { ...state.pack, sectionEnvelopes: [...(state.pack.sectionEnvelopes ?? []), envelope] },
-    })),
-  updateSectionEnvelope: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sectionEnvelopes: (state.pack.sectionEnvelopes ?? []).map((e) =>
-          e.id === id ? { ...e, ...update } : e,
-        ),
-      },
-    })),
-  deleteSectionEnvelope: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        sectionEnvelopes: (state.pack.sectionEnvelopes ?? []).filter((e) => e.id !== id),
-      },
-    })),
+  addSectionEnvelope: (envelope) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sectionEnvelopes: [...(state.pack.sectionEnvelopes ?? []), envelope] },
+  })); },
+  updateSectionEnvelope: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sectionEnvelopes: (state.pack.sectionEnvelopes ?? []).map((e) => e.id === id ? { ...e, ...update } : e) },
+  })); },
+  deleteSectionEnvelope: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, sectionEnvelopes: (state.pack.sectionEnvelopes ?? []).filter((e) => e.id !== id) },
+  })); },
 
   // ── Automation captures ──
-  addAutomationCapture: (capture) =>
-    set((state) => ({
-      pack: { ...state.pack, automationCaptures: [...(state.pack.automationCaptures ?? []), capture] },
-    })),
-  deleteAutomationCapture: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        automationCaptures: (state.pack.automationCaptures ?? []).filter((c) => c.id !== id),
-      },
-    })),
+  addAutomationCapture: (capture) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, automationCaptures: [...(state.pack.automationCaptures ?? []), capture] },
+  })); },
+  deleteAutomationCapture: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, automationCaptures: (state.pack.automationCaptures ?? []).filter((c) => c.id !== id) },
+  })); },
 
   // ── Library: templates ──
-  addTemplate: (template) =>
-    set((state) => ({
-      pack: { ...state.pack, templates: [...(state.pack.templates ?? []), template] },
-    })),
-  updateTemplate: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        templates: (state.pack.templates ?? []).map((t) =>
-          t.id === id ? { ...t, ...update } : t,
-        ),
-      },
-    })),
-  deleteTemplate: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        templates: (state.pack.templates ?? []).filter((t) => t.id !== id),
-      },
-    })),
+  addTemplate: (template) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, templates: [...(state.pack.templates ?? []), template] },
+  })); },
+  updateTemplate: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, templates: (state.pack.templates ?? []).map((t) => t.id === id ? { ...t, ...update } : t) },
+  })); },
+  deleteTemplate: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, templates: (state.pack.templates ?? []).filter((t) => t.id !== id) },
+  })); },
 
   // ── Library: snapshots ──
-  addSnapshot: (snapshot) =>
-    set((state) => ({
-      pack: { ...state.pack, snapshots: [...(state.pack.snapshots ?? []), snapshot] },
-    })),
-  deleteSnapshot: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        snapshots: (state.pack.snapshots ?? []).filter((sn) => sn.id !== id),
-      },
-    })),
+  addSnapshot: (snapshot) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, snapshots: [...(state.pack.snapshots ?? []), snapshot] },
+  })); },
+  deleteSnapshot: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, snapshots: (state.pack.snapshots ?? []).filter((sn) => sn.id !== id) },
+  })); },
 
   // ── Library: branches ──
-  addBranch: (branch) =>
-    set((state) => ({
-      pack: { ...state.pack, branches: [...(state.pack.branches ?? []), branch] },
-    })),
-  deleteBranch: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        branches: (state.pack.branches ?? []).filter((b) => b.id !== id),
-      },
-    })),
+  addBranch: (branch) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, branches: [...(state.pack.branches ?? []), branch] },
+  })); },
+  deleteBranch: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, branches: (state.pack.branches ?? []).filter((b) => b.id !== id) },
+  })); },
 
   // ── Library: favorites ──
-  addFavorite: (fav) =>
-    set((state) => ({
-      pack: { ...state.pack, favorites: [...(state.pack.favorites ?? []), fav] },
-    })),
-  deleteFavorite: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        favorites: (state.pack.favorites ?? []).filter((f) => f.id !== id),
-      },
-    })),
+  addFavorite: (fav) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, favorites: [...(state.pack.favorites ?? []), fav] },
+  })); },
+  deleteFavorite: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, favorites: (state.pack.favorites ?? []).filter((f) => f.id !== id) },
+  })); },
 
   // ── Library: collections ──
-  addCollection: (col) =>
-    set((state) => ({
-      pack: { ...state.pack, collections: [...(state.pack.collections ?? []), col] },
-    })),
-  updateCollection: (id, update) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        collections: (state.pack.collections ?? []).map((c) =>
-          c.id === id ? { ...c, ...update } : c,
-        ),
-      },
-    })),
-  deleteCollection: (id) =>
-    set((state) => ({
-      pack: {
-        ...state.pack,
-        collections: (state.pack.collections ?? []).filter((c) => c.id !== id),
-      },
-    })),
-}));
+  addCollection: (col) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, collections: [...(state.pack.collections ?? []), col] },
+  })); },
+  updateCollection: (id, update) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, collections: (state.pack.collections ?? []).map((c) => c.id === id ? { ...c, ...update } : c) },
+  })); },
+  deleteCollection: (id) => { _pushUndo(set); return set((state) => ({
+    pack: { ...state.pack, collections: (state.pack.collections ?? []).filter((c) => c.id !== id) },
+  })); },
+}), { name: "soundweave-studio", enabled: process.env.NODE_ENV !== "production" }));
+
+/** Reset undo debounce state — test-only helper */
+export function _resetUndoDebounce() {
+  if (_undoDebounceTimer !== null) {
+    clearTimeout(_undoDebounceTimer);
+    _undoDebounceTimer = null;
+  }
+  _undoPending = false;
+}

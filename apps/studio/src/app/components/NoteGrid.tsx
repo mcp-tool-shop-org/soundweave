@@ -1,6 +1,8 @@
 "use client";
 
+import React from "react";
 import type { Clip, ClipNote } from "@soundweave/schema";
+import { auditionNote } from "../playback-store";
 
 /** Number of pitch rows to show (MIDI notes) */
 const TOTAL_ROWS = 25;
@@ -9,7 +11,7 @@ const BASE_PITCH = 48; // C3
 const DRUM_LABELS: Record<number, string> = {
   36: "Kick",
   38: "Snare",
-  42: "CHat",
+  42: "C.Hat",
   46: "OHat",
   39: "Clap",
   45: "Tom",
@@ -70,6 +72,8 @@ export function NoteGrid({ clip, onAddNote, onRemoveNote }: NoteGridProps) {
         durationTicks: quantize,
         velocity: 100,
       });
+      // Audition the note so the musician hears what they placed
+      auditionNote(clip.instrumentId, pitch, 100, 0.2);
     }
   }
 
@@ -113,9 +117,8 @@ export function NoteGrid({ clip, onAddNote, onRemoveNote }: NoteGridProps) {
 
         {/* Pitch rows */}
         {rows.map(({ pitch, label }) => (
-          <>
+          <React.Fragment key={pitch}>
             <div
-              key={`label-${pitch}`}
               className="note-grid-label"
               style={{
                 fontSize: 10,
@@ -148,7 +151,7 @@ export function NoteGrid({ clip, onAddNote, onRemoveNote }: NoteGridProps) {
                 />
               );
             })}
-          </>
+          </React.Fragment>
         ))}
       </div>
     </div>

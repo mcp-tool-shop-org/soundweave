@@ -69,7 +69,7 @@ function generateSuggestions(
         const refClip = keyedClip!;
         const prog = progressionFromDegrees(key, [0, 3, 4, 0], 0, 480 * (refClip.lengthBeats / 4));
         const bassNotes = clipBassLine(prog, 2, 480 * (refClip.lengthBeats / 4));
-        const newId = `clip-ai-bass-${Date.now()}`;
+        const newId = `clip-ai-bass-${crypto.randomUUID()}`;
         const newClip: Clip = {
           id: newId,
           name: "AI Bass",
@@ -98,7 +98,7 @@ function generateSuggestions(
         description: "Generate a basic kick/snare/hat pattern",
         icon: "🥁",
         apply: () => {
-          const newId = `clip-ai-drums-${Date.now()}`;
+          const newId = `clip-ai-drums-${crypto.randomUUID()}`;
           const beats = refClip.lengthBeats;
           const notes: ClipNote[] = [];
           // Kick on beats 1, 3
@@ -141,7 +141,7 @@ function generateSuggestions(
         const refClip = keyedClip!;
         const prog = progressionFromDegrees(key, [0, 5, 3, 4], 0, 480 * (refClip.lengthBeats / 4));
         const padNotes = clipPadVoicing(prog, 4, 480 * (refClip.lengthBeats / 4));
-        const newId = `clip-ai-pad-${Date.now()}`;
+        const newId = `clip-ai-pad-${crypto.randomUUID()}`;
         const newClip: Clip = {
           id: newId,
           name: "AI Harmony",
@@ -172,7 +172,7 @@ function generateSuggestions(
         const palette = chordPalette(key);
         const chord = palette[0]?.chord ?? { root: key.root, quality: "major" as const };
         const arpNotes = clipArpeggiate(chord, 4, 0, 120, 480 * refClip.lengthBeats);
-        const newId = `clip-ai-arp-${Date.now()}`;
+        const newId = `clip-ai-arp-${crypto.randomUUID()}`;
         const newClip: Clip = {
           id: newId,
           name: "AI Arpeggio",
@@ -236,7 +236,7 @@ function generateSuggestions(
             2,
             cKey ?? undefined,
           );
-          const newId = `clip-ai-var-${Date.now()}`;
+          const newId = `clip-ai-var-${crypto.randomUUID()}`;
           const newClip: Clip = {
             ...clip,
             id: newId,
@@ -338,7 +338,7 @@ export function ArrangementScreen() {
   const transportState = usePlaybackStore((s) => s.transportState);
 
   // Local state
-  const [activeSceneId, setActiveSceneId] = useState<string>("");
+  const [activeSceneId, setActiveSceneId] = useState<string>(() => scenes[0]?.id ?? "");
   const [expandedClipId, setExpandedClipId] = useState<string | null>(null);
 
   // Sync active scene when pack changes
@@ -389,7 +389,7 @@ export function ArrangementScreen() {
   const handleAddChannel = () => {
     if (!activeScene) return;
     const name = newChannelName || `New ${newChannelLane}`;
-    const id = `clip-${Date.now()}`;
+    const id = `clip-${crypto.randomUUID()}`;
     const refClip = channelData.find((d) => d.clip)?.clip;
     const newClip: Clip = {
       id,

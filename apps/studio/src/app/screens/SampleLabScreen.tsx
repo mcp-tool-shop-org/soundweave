@@ -6,10 +6,7 @@ import { useStudioStore } from "../store";
 type Tab = "import" | "trim" | "slicing" | "kit" | "instrument";
 
 export function SampleLabScreen() {
-  const pack = useStudioStore((s) => s.pack);
   const [tab, setTab] = useState<Tab>("import");
-
-  if (!pack) return <p>Load a pack to use the Sample Lab.</p>;
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "import", label: "Import" },
@@ -74,7 +71,7 @@ function ImportPanel() {
         }}
       >
         <p>Drag &amp; drop audio files here, or click to browse.</p>
-        <input type="file" accept="audio/*" multiple style={{ marginTop: "0.5rem" }} />
+        <input type="file" accept="audio/*" multiple disabled title="Coming soon" style={{ marginTop: "0.5rem" }} />
       </div>
 
       {importedAssets.length > 0 && (

@@ -26,7 +26,7 @@ afterEach(() => {
 describe("Export screen — rendering", () => {
   it("navigates to export screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(
       screen.getByText("Export your soundtrack pack as a runtime JSON file"),
     ).toBeInTheDocument();
@@ -34,19 +34,19 @@ describe("Export screen — rendering", () => {
 
   it("shows ready status for valid pack", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(screen.getByText("Ready to export")).toBeInTheDocument();
   });
 
   it("shows round-trip verified badge", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(screen.getByText("Round-trip verified")).toBeInTheDocument();
   });
 
   it("shows runtime summary counts", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     // Starter pack: 8 assets, 7 stems, 5 scenes, 5 bindings, 4 transitions
     // These numbers also appear in the summary stats
     const values = screen.getAllByText("8");
@@ -55,7 +55,7 @@ describe("Export screen — rendering", () => {
 
   it("shows JSON preview", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(screen.getByText("JSON Preview")).toBeInTheDocument();
     // The JSON preview should contain the pack ID
     const pre = screen.getByText(/starter-pack/);
@@ -64,7 +64,7 @@ describe("Export screen — rendering", () => {
 
   it("has copy and download buttons", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(
       screen.getByRole("button", { name: "Copy JSON" }),
     ).toBeInTheDocument();
@@ -75,7 +75,7 @@ describe("Export screen — rendering", () => {
 
   it("copy and download buttons are enabled for valid pack", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(screen.getByRole("button", { name: "Copy JSON" })).not.toBeDisabled();
     expect(
       screen.getByRole("button", { name: "Download .json" }),
@@ -193,13 +193,13 @@ describe("Example pack switching", () => {
   it("resets section to project on pack switch", () => {
     render(<Studio />);
     // Navigate to export first
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     expect(useStudioStore.getState().section).toBe("export");
 
     // Switch pack (first combobox is the sidebar pack switcher)
     const select = screen.getAllByRole("combobox")[0];
     fireEvent.change(select, { target: { value: "minimal-pack" } });
-    expect(useStudioStore.getState().section).toBe("project");
+    expect(useStudioStore.getState().section).toBe("arrangement");
   });
 
   it("minimal pack exports successfully", () => {
@@ -207,7 +207,7 @@ describe("Example pack switching", () => {
       pack: JSON.parse(JSON.stringify(minimalPack)) as SoundtrackPack,
     });
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     // Minimal pack has warnings (missing categories) but is not blocked
     expect(screen.getByRole("button", { name: "Copy JSON" })).not.toBeDisabled();
   });
@@ -219,7 +219,7 @@ describe("Example pack switching", () => {
       ) as SoundtrackPack,
     });
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
     // Combat pack has warnings (missing safe-zone) but is not blocked
     expect(screen.getByRole("button", { name: "Copy JSON" })).not.toBeDisabled();
   });
@@ -228,7 +228,7 @@ describe("Example pack switching", () => {
 describe("Export screen — download", () => {
   it("triggers download with correct filename", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Export/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Export/ }));
 
     // Mock URL.createObjectURL and revokeObjectURL
     const createObjectURL = vi.fn(() => "blob:mock");

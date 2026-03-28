@@ -12,7 +12,7 @@ Through 19 phases of development, Soundweave evolved from a schema-only data for
 - **Automation**: Lanes, macros, envelopes, live capture
 - **Recall and Reuse**: Templates, snapshots, branches, favorites, collections, compare
 - **Studio**: Full authoring UI with 11 screens and integrated state management
-- **Validation**: Schema validation, integrity auditing, 299+ tests across 15 packages
+- **Validation**: Schema validation, integrity auditing, 1,002 tests across 16 packages
 
 ## Current Strengths
 
@@ -35,7 +35,7 @@ What needs to improve:
 - **Live performance ergonomics**: Launch grid and real-time control need better UX
 - **Runtime integration**: No engine-specific adapters or examples
 - **Collaboration**: Single-user only
-- **Rendering**: Basic WAV rendering, no multi-format export
+- **Rendering**: ~~Basic WAV rendering, no multi-format export~~ (resolved in v1.1.0: 24/32-bit WAV at 44.1/48/96kHz)
 
 ## Near-Term Roadmap
 
@@ -54,13 +54,13 @@ Make it easier to ship Soundweave output into real game projects.
 
 ### Phase 21 — Live Performance and Launch Ergonomics
 
-Improve real-time creative control.
+Improve real-time creative control. Partially addressed in v1.1.0: MIDI import/export, real-time clip preview, click-to-audition, metronome, keyboard shortcuts.
 
 - Better launch matrix
-- MIDI controller support
+- MIDI controller support (MIDI file I/O shipped; live controller input pending)
 - Macro performance pages
 - Scene/cue launch gestures
-- Clip triggering ergonomics
+- ~~Clip triggering ergonomics~~ (shipped: click-to-audition, keyboard shortcuts)
 - More expressive live capture
 
 **User win**: Perform adaptive score changes like an instrument, not a form.
@@ -107,12 +107,12 @@ Careful, user-controlled creative assistance.
 
 ### Phase 25 — Advanced Sampler and Source Design
 
-Expand the sound-creation side.
+Expand the sound-creation side. Partially addressed in v1.1.0: multi-oscillator synth, LFO modulation, sample-based instruments, unison/supersaw.
 
-- Multisample instruments
-- Better envelopes and modulation
+- ~~Multisample instruments~~ (shipped: SampleVoice with piano/strings/guitar templates)
+- ~~Better envelopes and modulation~~ (shipped: LFO modulation for filter/amplitude/pitch)
 - Slice-to-pattern workflows
-- Layer stacks in instruments
+- ~~Layer stacks in instruments~~ (shipped: multi-oscillator with 2-4 oscillators, unison up to 8 voices)
 - Round-robin / variation playback
 - Texture-builder tools
 

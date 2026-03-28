@@ -28,6 +28,23 @@ export function evaluateEnvelope(
   const { shape, durationMs, depth } = envelope;
   const d = depth ?? 1;
 
+  // Guard: zero or negative duration — return target value immediately
+  if (durationMs <= 0) {
+    // At "completed" state: fade-in→full, fade-out→zero, others→endpoint
+    switch (shape) {
+      case "fade-in":
+      case "swell":
+      case "filter-rise":
+        return d;
+      case "fade-out":
+        return 0;
+      case "duck":
+        return 1;
+      case "filter-fall":
+        return 0;
+    }
+  }
+
   // Clamp progress to 0–1
   const t = Math.max(0, Math.min(1, offsetMs / durationMs));
 

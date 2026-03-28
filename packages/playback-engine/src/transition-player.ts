@@ -5,7 +5,7 @@
 
 import type { SoundtrackPack, TransitionRule } from "@soundweave/schema";
 import { findTransitionRule } from "@soundweave/audio-engine";
-import type { PlaybackListener, PlaybackEventType } from "./types.js";
+import type { PlaybackListener } from "./types.js";
 import type { ScenePlayer } from "./scene-player.js";
 import type { AssetLoader } from "./loader.js";
 import type { Mixer } from "./mixer.js";
@@ -75,6 +75,12 @@ export class TransitionPlayer {
     }
 
     this.transitioning = true;
+    this.emit("transition-start", {
+      fromSceneId,
+      toSceneId,
+      mode: rule.mode,
+      durationMs: rule.durationMs ?? 1000,
+    });
     try {
       const fadeCurve = options?.fadeCurve ?? "exponential";
       switch (rule.mode) {
@@ -94,6 +100,7 @@ export class TransitionPlayer {
           await this.scenePlayer.playScene(pack, toSceneId);
           break;
       }
+      this.emit("scene-change", { sceneId: toSceneId });
     } finally {
       this.transitioning = false;
     }
@@ -114,8 +121,12 @@ export class TransitionPlayer {
       ? this.mixer.getMasterGain()
       : this.scenePlayer.getMasterGain();
 
+    // Capture the user's master gain so we can restore it after the fade-in.
+    // Without this, the crossfade would overwrite the musician's volume to 1.0.
+    const originalGain = masterGain.gain.value;
+
     // Fade out using selected curve
-    masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+    masterGain.gain.setValueAtTime(originalGain, now);
     if (fadeCurve === "exponential") {
       // exponentialRamp needs a non-zero target; use near-zero
       masterGain.gain.exponentialRampToValueAtTime(0.0001, now + durationS);
@@ -123,13 +134,14 @@ export class TransitionPlayer {
       masterGain.gain.linearRampToValueAtTime(0, now + durationS);
     }
 
-    // Wait half the fade, then start new scene
-    await sleep(durationMs / 2);
+    // Wait for the full fade-out before starting the new scene,
+    // so the old scene audio completes its fade naturally
+    await sleep(durationMs);
 
     // Play new scene (this stops old stems and resets master gain)
     await this.scenePlayer.playScene(pack, toSceneId);
 
-    // Fade in new scene
+    // Fade in new scene — restore to the user's original gain, not hardcoded 1.0
     const newMasterGain = this.mixer
       ? this.mixer.getMasterGain()
       : this.scenePlayer.getMasterGain();
@@ -137,12 +149,12 @@ export class TransitionPlayer {
     newMasterGain.gain.setValueAtTime(0.0001, fadeInStart);
     if (fadeCurve === "exponential") {
       newMasterGain.gain.exponentialRampToValueAtTime(
-        1,
+        originalGain || 1,
         fadeInStart + durationS / 2,
       );
     } else {
       newMasterGain.gain.linearRampToValueAtTime(
-        1,
+        originalGain,
         fadeInStart + durationS / 2,
       );
     }
@@ -192,9 +204,10 @@ export class TransitionPlayer {
     await this.scenePlayer.playScene(pack, toSceneId);
   }
 
-  private emit(type: string, detail?: unknown): void {
-    this.listener?.({ type: type as PlaybackEventType, detail });
+  private emit(type: string, detail: unknown): void {
+    this.listener?.({ type: type as import("./types.js").PlaybackEventType, detail });
   }
+
 }
 
 function sleep(ms: number): Promise<void> {

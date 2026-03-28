@@ -78,6 +78,13 @@ describe("trim", () => {
     expect(looped.loopStartMs).toBe(100);
     expect(looped.loopEndMs).toBe(3900);
   });
+
+  it("applyTrim with inverted range (startMs > endMs) stores values as-is", () => {
+    const trimmed = applyTrim(baseAsset, 3000, 1000);
+    expect(trimmed.trimStartMs).toBe(3000);
+    expect(trimmed.trimEndMs).toBe(1000);
+    // applyTrim is a pure setter — validation is the caller's responsibility
+  });
 });
 
 // ── Slice ──
@@ -95,6 +102,10 @@ describe("slice", () => {
     expect(sliceEvenly("a1", 0, 1000, 0)).toEqual([]);
   });
 
+  it("sliceEvenly returns empty for negative count", () => {
+    expect(sliceEvenly("a1", 0, 1000, -3)).toEqual([]);
+  });
+
   it("sliceAtOnsets handles sorted onsets", () => {
     const slices = sliceAtOnsets("a1", [0, 1000, 2500], 4000);
     expect(slices).toHaveLength(3);
@@ -110,6 +121,11 @@ describe("slice", () => {
 
   it("sliceAtOnsets returns empty for no onsets", () => {
     expect(sliceAtOnsets("a1", [], 1000)).toEqual([]);
+  });
+
+  it("sliceAtOnsets returns empty for empty onsets array", () => {
+    const result = sliceAtOnsets("a1", [], 5000);
+    expect(result).toEqual([]);
   });
 
   it("sliceDurationMs computes duration", () => {

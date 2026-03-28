@@ -6,8 +6,8 @@ import {
 } from "../src/presets";
 
 describe("Factory Presets", () => {
-  it("has 12 curated presets", () => {
-    expect(FACTORY_PRESETS).toHaveLength(12);
+  it("has 16 curated presets", () => {
+    expect(FACTORY_PRESETS).toHaveLength(16);
   });
 
   it("covers all categories", () => {

@@ -24,7 +24,8 @@ export function evaluateLane(lane: AutomationLane, timeMs: number): number {
     }
   }
 
-  const t = (timeMs - a.timeMs) / (b.timeMs - a.timeMs);
+  const span = b.timeMs - a.timeMs;
+  const t = span === 0 ? 1 : (timeMs - a.timeMs) / span;
   return interpolate(a.value, b.value, t, a.curve ?? "linear");
 }
 
@@ -60,6 +61,9 @@ export function sampleLane(
   endMs: number,
   stepMs: number,
 ): number[] {
+  if (stepMs <= 0) {
+    throw new RangeError("sampleLane: stepMs must be positive");
+  }
   const values: number[] = [];
   for (let t = startMs; t <= endMs; t += stepMs) {
     values.push(evaluateLane(lane, t));

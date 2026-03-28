@@ -51,9 +51,13 @@ export function traceLineage(
   snapshots: Snapshot[],
 ): { snapshotId: string; branchId: string }[] {
   const chain: { snapshotId: string; branchId: string }[] = [];
+  const visited = new Set<string>();
   let currentId = entityId;
 
   for (let i = 0; i < branches.length; i++) {
+    if (visited.has(currentId)) break;
+    visited.add(currentId);
+
     const branch = branches.find((b) => b.entityId === currentId);
     if (!branch) break;
 

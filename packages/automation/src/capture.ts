@@ -44,7 +44,6 @@ export function finalizeCapture(
 
 /**
  * Apply a capture's recorded points to a lane, replacing the lane's existing points.
- * Only applies if the capture's source matches the lane's parameter.
  */
 export function applyCaptureToLane(
   capture: AutomationCapture,
@@ -88,6 +87,6 @@ export function thinCapture(
 /** Get the duration covered by a capture. */
 export function captureDuration(capture: AutomationCapture): number {
   if (capture.points.length < 2) return 0;
-  const sorted = capture.points;
+  const sorted = [...capture.points].sort((a, b) => a.timeMs - b.timeMs);
   return sorted[sorted.length - 1].timeMs - sorted[0].timeMs;
 }

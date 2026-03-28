@@ -79,7 +79,7 @@ export function addGhostHits(
         pitch: sorted[i].pitch,
         startTick: sorted[i].startTick + tickOffset,
         durationTicks: Math.min(sorted[i].durationTicks, tickOffset),
-        velocity: Math.min(ghostVelocity, sorted[i].velocity - 20),
+        velocity: Math.max(1, Math.min(ghostVelocity, sorted[i].velocity - 20)),
       });
     }
   }

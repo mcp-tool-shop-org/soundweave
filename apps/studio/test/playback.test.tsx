@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act, cleanup } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent, act, cleanup } from "@testing-library/react";
 import type { SoundtrackPack } from "@soundweave/schema";
 import { loadFixture, FIXTURES } from "@soundweave/test-kit";
 
@@ -111,7 +110,7 @@ describe("Playback UI", () => {
 
     expect(screen.getByText("Stopped")).toBeInTheDocument();
 
-    const stopButton = screen.getByTitle("Stop playback");
+    const stopButton = screen.getByTitle("Stop (Escape)");
     expect(stopButton).toBeDisabled();
   });
 
@@ -125,5 +124,55 @@ describe("Playback UI", () => {
     // TransportStrip should be present (at least one toolbar)
     const toolbars = screen.getAllByRole("toolbar", { name: /playback transport/i });
     expect(toolbars.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("TransportStrip shows error banner when errorMessage is set", async () => {
+    const { usePlaybackStore } = await import("../src/app/playback-store");
+    const { TransportStrip } = await import(
+      "../src/app/components/TransportStrip"
+    );
+
+    act(() => {
+      usePlaybackStore.setState({ errorMessage: 'Could not play scene "forest": decode failed' });
+    });
+
+    render(<TransportStrip />);
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toBeInTheDocument();
+    expect(banner.textContent).toContain("Could not play scene");
+  });
+
+  it("TransportStrip dismiss button clears error", async () => {
+    const { usePlaybackStore } = await import("../src/app/playback-store");
+    const { TransportStrip } = await import(
+      "../src/app/components/TransportStrip"
+    );
+
+    act(() => {
+      usePlaybackStore.setState({ errorMessage: "Test error" });
+    });
+
+    render(<TransportStrip />);
+
+    const dismissBtn = screen.getByLabelText("Dismiss error");
+    fireEvent.click(dismissBtn);
+
+    expect(usePlaybackStore.getState().errorMessage).toBeNull();
+  });
+
+  it("TransportStrip hides banner when no error", async () => {
+    const { usePlaybackStore } = await import("../src/app/playback-store");
+    const { TransportStrip } = await import(
+      "../src/app/components/TransportStrip"
+    );
+
+    act(() => {
+      usePlaybackStore.setState({ errorMessage: null });
+    });
+
+    render(<TransportStrip />);
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

@@ -173,6 +173,18 @@ describe("parseRuntimePack", () => {
     const broken = { ...rt, meta: { ...rt.meta, schemaVersion: "2" } };
     expect(() => parseRuntimePack(broken)).toThrow();
   });
+
+  it("throws on null input", () => {
+    expect(() => parseRuntimePack(null)).toThrow();
+  });
+
+  it("throws on undefined input", () => {
+    expect(() => parseRuntimePack(undefined)).toThrow();
+  });
+
+  it("throws on non-object input", () => {
+    expect(() => parseRuntimePack("hello")).toThrow();
+  });
 });
 
 // ────────────────────────────────────────────

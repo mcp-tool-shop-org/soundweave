@@ -10,7 +10,7 @@ import {
   clipLengthSeconds,
   resolveClipNotes,
 } from "@soundweave/clip-engine";
-import type { RenderOptions, RenderResult, BusId } from "./mixer-types.js";
+import type { RenderOptions, RenderResult, BusId, WavBitDepth } from "./mixer-types.js";
 import { Mixer } from "./mixer.js";
 import { AssetLoader } from "./loader.js";
 import { dbToGain } from "./scene-player.js";
@@ -39,7 +39,7 @@ export class CueRenderer {
     pack: SoundtrackPack,
     options: RenderOptions,
   ): Promise<RenderResult> {
-    const sampleRate = options.sampleRate ?? 44100;
+    const sampleRate = options.sampleRate ?? 48000;
     const channels = options.channels ?? 2;
 
     // Resolve scene and stems
@@ -176,7 +176,7 @@ export class CueRenderer {
             const scheduled = scheduleNotes(notes, clip.bpm, offset);
             for (const n of scheduled) {
               voice.playNote(
-                offlineCtx as unknown as AudioContext,
+                offlineCtx,
                 n.pitch,
                 n.velocity,
                 n.startTime,
@@ -209,16 +209,9 @@ export class CueRenderer {
     const renderedBuffer = await offlineCtx.startRendering();
     mixer.dispose();
 
-    // Trim tail silence (keep at least the requested duration)
-    const trimmedBuffer = trimSilence(
-      renderedBuffer,
-      durationSeconds,
-      sampleRate,
-    );
-
     return {
-      buffer: trimmedBuffer,
-      durationSeconds: trimmedBuffer.duration,
+      buffer: renderedBuffer,
+      durationSeconds: renderedBuffer.duration,
       sampleRate,
       channels,
     };
@@ -231,85 +224,94 @@ function inferBus(role: string): BusId {
   return "music";
 }
 
-/** Trim trailing silence from a rendered buffer, keeping at least minDuration */
-function trimSilence(
-  buffer: AudioBuffer,
-  minDuration: number,
-  sampleRate: number,
-): AudioBuffer {
-  const minSamples = Math.ceil(minDuration * sampleRate);
-  let lastNonSilent = minSamples;
-
-  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
-    const data = buffer.getChannelData(ch);
-    for (let i = data.length - 1; i >= minSamples; i--) {
-      if (Math.abs(data[i]) > 0.0001) {
-        if (i > lastNonSilent) lastNonSilent = i;
-        break;
-      }
-    }
-  }
-
-  // Add a tiny fade-out (100 samples)
-  const endSample = Math.min(lastNonSilent + 100, buffer.length);
-  if (endSample >= buffer.length) return buffer;
-
-  // Can't re-create AudioBuffer without a context, so return as-is
-  // The slight extra tail is acceptable (at most 2s)
-  return buffer;
-}
-
 /**
  * Encode an AudioBuffer as a WAV Blob.
- * Returns a Blob of type audio/wav.
+ * Supports 16-bit PCM, 24-bit PCM, and 32-bit IEEE float.
+ * @param buffer The AudioBuffer to encode
+ * @param bitDepth 16, 24, or 32 (float). Default: 24
+ * @returns A Blob of type audio/wav
  */
-export function encodeWav(buffer: AudioBuffer): Blob {
+export function encodeWav(buffer: AudioBuffer, bitDepth: WavBitDepth = 24): Blob {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const length = buffer.length;
-  const bitsPerSample = 16;
+  const bitsPerSample = bitDepth;
   const bytesPerSample = bitsPerSample / 8;
   const blockAlign = numChannels * bytesPerSample;
   const dataSize = length * blockAlign;
-  const headerSize = 44;
+  const isFloat = bitDepth === 32;
+  // For float format, fmt chunk is 18 bytes (extra 2 bytes for cbSize)
+  const fmtChunkSize = isFloat ? 18 : 16;
+  const headerSize = 12 + (8 + fmtChunkSize) + 8; // RIFF(12) + fmt(8+chunk) + data(8)
   const totalSize = headerSize + dataSize;
 
   const arrayBuffer = new ArrayBuffer(totalSize);
   const view = new DataView(arrayBuffer);
 
+  let pos = 0;
+
   // RIFF header
-  writeString(view, 0, "RIFF");
-  view.setUint32(4, totalSize - 8, true);
-  writeString(view, 8, "WAVE");
+  writeString(view, pos, "RIFF"); pos += 4;
+  view.setUint32(pos, totalSize - 8, true); pos += 4;
+  writeString(view, pos, "WAVE"); pos += 4;
 
   // fmt chunk
-  writeString(view, 12, "fmt ");
-  view.setUint32(16, 16, true); // chunk size
-  view.setUint16(20, 1, true); // PCM format
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bitsPerSample, true);
+  writeString(view, pos, "fmt "); pos += 4;
+  view.setUint32(pos, fmtChunkSize, true); pos += 4;
+  // Format tag: 1 = PCM, 3 = IEEE_FLOAT
+  view.setUint16(pos, isFloat ? 3 : 1, true); pos += 2;
+  view.setUint16(pos, numChannels, true); pos += 2;
+  view.setUint32(pos, sampleRate, true); pos += 4;
+  view.setUint32(pos, sampleRate * blockAlign, true); pos += 4;
+  view.setUint16(pos, blockAlign, true); pos += 2;
+  view.setUint16(pos, bitsPerSample, true); pos += 2;
+  if (isFloat) {
+    // cbSize = 0 (no extra data for IEEE float, but field is required)
+    view.setUint16(pos, 0, true); pos += 2;
+  }
 
   // data chunk
-  writeString(view, 36, "data");
-  view.setUint32(40, dataSize, true);
+  writeString(view, pos, "data"); pos += 4;
+  view.setUint32(pos, dataSize, true); pos += 4;
 
-  // Interleave channel data and write as 16-bit PCM
+  // Interleave channel data
   const channels: Float32Array[] = [];
   for (let ch = 0; ch < numChannels; ch++) {
     channels.push(buffer.getChannelData(ch));
   }
 
-  let offset = headerSize;
-  for (let i = 0; i < length; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const sample = Math.max(-1, Math.min(1, channels[ch][i]));
-      const intSample =
-        sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-      view.setInt16(offset, intSample, true);
-      offset += 2;
+  let offset = pos;
+  if (bitDepth === 16) {
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+        view.setInt16(offset, intSample, true);
+        offset += 2;
+      }
+    }
+  } else if (bitDepth === 24) {
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        const sample = Math.max(-1, Math.min(1, channels[ch][i]));
+        // Scale to 24-bit range: -8388608 to 8388607
+        const intSample = Math.round(
+          sample < 0 ? sample * 0x800000 : sample * 0x7fffff,
+        );
+        // Write 3 bytes little-endian
+        view.setUint8(offset, intSample & 0xff);
+        view.setUint8(offset + 1, (intSample >> 8) & 0xff);
+        view.setUint8(offset + 2, (intSample >> 16) & 0xff);
+        offset += 3;
+      }
+    }
+  } else {
+    // 32-bit IEEE float
+    for (let i = 0; i < length; i++) {
+      for (let ch = 0; ch < numChannels; ch++) {
+        view.setFloat32(offset, channels[ch][i], true);
+        offset += 4;
+      }
     }
   }
 

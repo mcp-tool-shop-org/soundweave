@@ -3,7 +3,7 @@
 // ────────────────────────────────────────────
 
 import type { SoundtrackPack, AudioAsset } from "@soundweave/schema";
-import type { LoadState, PlaybackListener } from "./types.js";
+import type { LoadState, PlaybackEventType, PlaybackListener } from "./types.js";
 
 export class AssetLoader {
   private ctx: AudioContext;
@@ -102,18 +102,84 @@ export class AssetLoader {
     }
   }
 
+  /** Timeout in milliseconds for fetch and decode operations */
+  static readonly LOAD_TIMEOUT_MS = 30_000;
+
+  // Security note: asset.src is fetched without URL validation. In browser environments,
+  // CORS policies provide protection against cross-origin requests. Server-side consumers
+  // should validate URLs before passing packs to the loader.
   private async loadAsset(asset: AudioAsset): Promise<AudioBuffer> {
     // If already inflight, reuse promise
     const existing = this.inflight.get(asset.id);
     if (existing) return existing;
 
     const promise = (async () => {
-      const response = await fetch(asset.src);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} for ${asset.src}`);
+      // Fetch with timeout via AbortController
+      const controller = new AbortController();
+      const fetchTimer = setTimeout(
+        () => controller.abort(),
+        AssetLoader.LOAD_TIMEOUT_MS,
+      );
+
+      let response: Response;
+      try {
+        response = await fetch(asset.src, { signal: controller.signal });
+      } catch (err) {
+        clearTimeout(fetchTimer);
+        this.inflight.delete(asset.id);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          throw new Error(
+            `Audio asset '${asset.id}' timed out after ${AssetLoader.LOAD_TIMEOUT_MS / 1000}s. Check your network connection.`,
+          );
+        }
+        throw err;
       }
+      clearTimeout(fetchTimer);
+
+      if (!response.ok) {
+        const contentType = response.headers?.get?.("content-type") ?? "unknown";
+        throw new Error(
+          `Failed to load audio '${asset.id}': server returned ${response.status} (${contentType})`,
+        );
+      }
+
+      // Validate content-type — reject HTML error pages fed to decodeAudioData
+      const contentType = response.headers?.get?.("content-type") ?? "";
+      if (
+        contentType &&
+        !contentType.startsWith("audio/") &&
+        !contentType.startsWith("application/octet-stream") &&
+        !contentType.startsWith("application/ogg")
+      ) {
+        throw new Error(
+          `Failed to load audio '${asset.id}': expected audio content but received '${contentType}'`,
+        );
+      }
+
       const arrayBuffer = await response.arrayBuffer();
-      return this.ctx.decodeAudioData(arrayBuffer);
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error(
+          `Failed to load audio '${asset.id}': server returned an empty response`,
+        );
+      }
+
+      // Decode with timeout — a stalled decodeAudioData should not hang forever
+      const decoded = await Promise.race([
+        this.ctx.decodeAudioData(arrayBuffer),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  `Audio asset '${asset.id}' decode timed out after ${AssetLoader.LOAD_TIMEOUT_MS / 1000}s. The file may be corrupted.`,
+                ),
+              ),
+            AssetLoader.LOAD_TIMEOUT_MS,
+          ),
+        ),
+      ]);
+
+      return decoded;
     })();
 
     this.inflight.set(asset.id, promise);
@@ -130,6 +196,6 @@ export class AssetLoader {
   }
 
   private emit(type: string, detail: unknown): void {
-    this.listener?.({ type: type as import("./types.js").PlaybackEventType, detail });
+    this.listener?.({ type: type as PlaybackEventType, detail });
   }
 }

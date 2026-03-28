@@ -3,7 +3,7 @@
 > Score a repo before remediation. Fill this out first, then use SHIP_GATE.md to fix.
 
 **Repo:** mcp-tool-shop-org/soundweave
-**Date:** 2026-03-11
+**Date:** 2026-03-28
 **Type tags:** [npm] [all]
 
 ## Pre-Remediation Assessment
@@ -11,7 +11,7 @@
 | Category | Score | Notes |
 |----------|-------|-------|
 | A. Security | 9/10 | Local-only browser app, zero network egress, no eval/innerHTML, no secrets. Missing: dependency scanning in CI. |
-| B. Error Handling | 9/10 | Zod schemas provide structured validation with path/code/message. Review package provides categorized integrity codes. No unhandled throws in source. |
+| B. Error Handling | 10/10 | Zod schemas with structured validation. React error boundary with recovery UI. AudioContext graceful fallback. Division-by-zero guards. Transport error cleanup. Delay feedback safety limiter. |
 | C. Operator Docs | 8/10 | README is comprehensive. 40-chapter handbook is written. Package READMEs exist for all 16 packages. Missing: architecture map doc. |
 | D. Shipping Hygiene | 9/10 | CI pipeline (lint, typecheck, test, build, coverage). Lockfile committed. `verify` script exists. engines.node set. Missing: dependency scanning, pnpm version bump. |
 | E. Identity (soft) | 7/10 | Logo present, 8-language translations, GitHub metadata set. Landing page and polyglot pipeline pending. |
@@ -38,11 +38,11 @@
 | Category | Before | After |
 |----------|--------|-------|
 | A. Security | 9/10 | 10/10 |
-| B. Error Handling | 9/10 | 9/10 |
+| B. Error Handling | 9/10 | 10/10 |
 | C. Operator Docs | 8/10 | 10/10 |
 | D. Shipping Hygiene | 9/10 | 10/10 |
 | E. Identity (soft) | 7/10 | 8/10 |
-| **Overall** | 42/50 | 47/50 |
+| **Overall** | 42/50 | 48/50 |
 
 ## Known Limits (post-v1)
 
@@ -50,3 +50,4 @@
 - Polyglot translation pipeline exists but not wired to CI
 - `@soundweave/ui` and `@soundweave/review` are placeholder packages awaiting Phase 22/26
 - Performance profiling for large packs not yet systematized
+- 1,002 tests (up from 663 at v1.0.x)

@@ -23,7 +23,7 @@ export interface InstrumentVoice {
    * @returns Voice handle for early stop
    */
   playNote(
-    ctx: AudioContext,
+    ctx: BaseAudioContext,
     pitch: number,
     velocity: number,
     startTime: number,
@@ -47,7 +47,24 @@ export interface SynthParams {
   filterType?: BiquadFilterType;
   detune?: number;
   gain?: number;
+  // Multi-oscillator parameters
+  osc2Waveform?: OscillatorType;
+  osc2Detune?: number; // cents
+  osc2Mix?: number; // 0-1
+  subOscMix?: number; // 0-1 (sub is one octave below, sine/square)
+  subOscWaveform?: OscillatorType; // typically 'sine' or 'square'
+  // Unison parameters
+  unisonVoices?: number; // 1-8
+  unisonSpread?: number; // 0-100 cents
+  // LFO modulation parameters
+  lfoRate?: number; // Hz, 0.01-20
+  lfoDepth?: number; // 0-1
+  lfoWaveform?: OscillatorType; // sine, triangle, square, sawtooth
+  lfoTarget?: "filter" | "amplitude" | "pitch";
 }
+
+/** LFO target type */
+export type LfoTarget = "filter" | "amplitude" | "pitch";
 
 /** MIDI note number → frequency */
 export function midiToFreq(note: number): number {

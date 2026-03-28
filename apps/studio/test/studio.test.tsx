@@ -36,31 +36,31 @@ describe("Studio — rendering", () => {
 describe("Studio — navigation", () => {
   it("switches to assets screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Assets/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Assets/ }));
     expect(screen.getByText("Assets (8)")).toBeInTheDocument();
   });
 
   it("switches to stems screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Stems/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Stems/ }));
     expect(screen.getByText("Stems (7)")).toBeInTheDocument();
   });
 
   it("switches to scenes screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Scenes/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Scenes/ }));
     expect(screen.getByText("Scenes (5)")).toBeInTheDocument();
   });
 
   it("switches to bindings screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Bindings/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bindings/ }));
     expect(screen.getByText("Bindings (5)")).toBeInTheDocument();
   });
 
   it("switches to transitions screen", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Transitions/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Transitions/ }));
     expect(screen.getByText("Transitions (4)")).toBeInTheDocument();
   });
 
@@ -76,7 +76,7 @@ describe("Studio — navigation", () => {
 describe("Studio — asset editing", () => {
   it("selects an asset and shows detail", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Assets/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Assets/ }));
     fireEvent.click(screen.getByRole("button", { name: /Exploration Base/ }));
     // Should show the asset detail fields
     expect(screen.getByDisplayValue("asset-explore-base")).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe("Studio — asset editing", () => {
 
   it("edits an asset name", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Assets/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Assets/ }));
     fireEvent.click(screen.getByRole("button", { name: /Exploration Base/ }));
     const nameInput = screen.getByDisplayValue("Exploration Base");
     fireEvent.change(nameInput, { target: { value: "Forest Theme" } });
@@ -96,7 +96,7 @@ describe("Studio — asset editing", () => {
 describe("Studio — stem editing", () => {
   it("selects a stem and shows detail", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Stems/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Stems/ }));
     fireEvent.click(screen.getByRole("button", { name: /Explore Base/ }));
     expect(screen.getByDisplayValue("stem-explore-base")).toBeInTheDocument();
   });
@@ -105,8 +105,8 @@ describe("Studio — stem editing", () => {
 describe("Studio — scene layer editing", () => {
   it("shows layers for a scene", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Scenes/ }));
-    fireEvent.click(screen.getByRole("button", { name: /^Exploration/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Scenes/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Exploration/ }));
     expect(screen.getByText("Layers (2)")).toBeInTheDocument();
   });
 });
@@ -114,14 +114,14 @@ describe("Studio — scene layer editing", () => {
 describe("Studio — binding condition editing", () => {
   it("shows conditions for a binding", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Bindings/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bindings/ }));
     fireEvent.click(screen.getByRole("button", { name: /Explore Mode/ }));
     expect(screen.getByText("Conditions (1)")).toBeInTheDocument();
   });
 
   it("adds a condition", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Bindings/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bindings/ }));
     fireEvent.click(screen.getByRole("button", { name: /Explore Mode/ }));
     fireEvent.click(screen.getByText("+ Add Condition"));
     expect(screen.getByText("Conditions (2)")).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe("Studio — binding condition editing", () => {
 describe("Studio — transition editing", () => {
   it("selects a transition and shows warnings when mode needs duration", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Transitions/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Transitions/ }));
     // add new transition that's immediate (no warnings)
     fireEvent.click(screen.getByRole("button", { name: /Explore → Tension/ }));
     // this one is crossfade with duration, no warning expected
@@ -153,7 +153,7 @@ describe("Studio — review screen", () => {
 describe("Studio — deletion behaviour", () => {
   it("deleting selected asset clears or updates selection", () => {
     render(<Studio />);
-    fireEvent.click(screen.getByRole("button", { name: /^Assets/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Assets/ }));
     fireEvent.click(screen.getByRole("button", { name: /Exploration Base/ }));
     fireEvent.click(screen.getByText("Delete Asset"));
     expect(useStudioStore.getState().pack.assets).toHaveLength(7);

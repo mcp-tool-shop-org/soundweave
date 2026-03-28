@@ -28,7 +28,7 @@ export function ExportScreen() {
   const [renderDuration, setRenderDuration] = useState(30);
   const [renderSceneId, setRenderSceneId] = useState<string>("");
 
-  const { renderStatus, lastRenderResult, renderScene } = usePlaybackStore();
+  const { renderStatus, lastRenderResult, renderScene, renderError } = usePlaybackStore();
 
   const scenes = pack.scenes;
 
@@ -55,9 +55,14 @@ export function ExportScreen() {
 
   const handleCopy = async () => {
     if (!serialized) return;
-    await navigator.clipboard.writeText(serialized);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(serialized);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+      alert("Copy failed — clipboard access denied");
+    }
   };
 
   const handleDownload = () => {
@@ -68,7 +73,7 @@ export function ExportScreen() {
     a.href = url;
     a.download = `${pack.meta.id || "soundtrack-pack"}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const statusLabel =
@@ -289,7 +294,7 @@ export function ExportScreen() {
 
           {renderStatus === "error" && (
             <div className="finding-item error" style={{ marginTop: 8 }}>
-              Render failed — check console for details
+              Render failed{renderError ? `: ${renderError}` : " — check console for details"}
             </div>
           )}
         </div>
@@ -340,7 +345,13 @@ export function ExportScreen() {
         {serialized && (
           <div className="export-preview">
             <h3>JSON Preview</h3>
-            <pre className="export-json">{serialized}</pre>
+            <div style={{ maxHeight: 400, overflowY: "auto" }}>
+              <pre className="export-json">
+                {serialized.length > 10000
+                  ? serialized.slice(0, 10000) + "\n\n... (truncated)"
+                  : serialized}
+              </pre>
+            </div>
           </div>
         )}
       </div>

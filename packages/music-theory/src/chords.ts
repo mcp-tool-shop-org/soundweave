@@ -19,7 +19,10 @@ const CHORD_INTERVALS: Record<ChordQuality, readonly number[]> = {
   sus4:       [0, 5, 7],
 };
 
-/** Build MIDI pitches for a chord in a given octave */
+/** Build MIDI pitches for a chord in a given octave.
+ *  Falls back to major intervals if quality is not found — unreachable in
+ *  typed code because ChordQuality is a closed union, but kept as a safe
+ *  default for any future runtime-only callers. */
 export function chordPitches(chord: Chord, octave: number): number[] {
   const intervals = CHORD_INTERVALS[chord.quality] ?? CHORD_INTERVALS.major;
   const base = midiNote(chord.root, octave);
@@ -63,7 +66,10 @@ export function diatonicChords(key: Key): Chord[] {
   return pcs.map((_, i) => diatonicChord(key, i));
 }
 
-/** Simple chord palette: I, ii, iii, IV, V, vi, vii° for the key */
+/** Simple chord palette for the key.
+ *  Numeral labels (I, ii, iii, IV, V, vi, vii°) assume a 7-note major-like
+ *  scale. For scales with fewer or more than 7 degrees, extra chords receive
+ *  plain numeric labels (e.g. "8", "9"). */
 export function chordPalette(key: Key): { degree: number; numeral: string; chord: Chord }[] {
   const numerals7 = ["I", "ii", "iii", "IV", "V", "vi", "vii°"];
   const chords = diatonicChords(key);

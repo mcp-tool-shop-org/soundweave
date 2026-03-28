@@ -14,10 +14,73 @@ import {
   type RenderOptions,
   type RenderResult,
 } from "@soundweave/playback-engine";
-import type { SoundtrackPack, RuntimeMusicState, Cue, PerformanceCaptureEvent, PerformanceCapture } from "@soundweave/schema";
+import type { SoundtrackPack, RuntimeMusicState, Cue, PerformanceCaptureEvent, PerformanceCapture, Clip } from "@soundweave/schema";
+import { InstrumentRack } from "@soundweave/instrument-rack";
+import { scheduleNotes, clipLengthSeconds } from "@soundweave/clip-engine";
+import type { Voice } from "@soundweave/instrument-rack";
+
+// ── Clip preview singleton ──
+
+let previewCtx: AudioContext | null = null;
+let previewVoices: Voice[] = [];
+let previewTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const previewRack = new InstrumentRack();
+
+function getPreviewCtx(): AudioContext {
+  if (!previewCtx || previewCtx.state === "closed") {
+    previewCtx = new AudioContext();
+  }
+  if (previewCtx.state === "suspended") {
+    previewCtx.resume();
+  }
+  return previewCtx;
+}
+
+function stopPreviewInternal() {
+  for (const v of previewVoices) v.stop();
+  previewVoices = [];
+  if (previewTimeoutId !== null) {
+    clearTimeout(previewTimeoutId);
+    previewTimeoutId = null;
+  }
+}
+
+function previewClipInternal(clip: Clip, onFinish: () => void): boolean {
+  stopPreviewInternal();
+
+  const ctx = getPreviewCtx();
+  const voice = previewRack.getVoice(clip.instrumentId);
+  if (!voice) return false;
+
+  const scheduled = scheduleNotes(clip.notes, clip.bpm, ctx.currentTime);
+  const dest = ctx.destination;
+
+  for (const note of scheduled) {
+    const handle = voice.playNote(ctx, note.pitch, note.velocity, note.startTime, note.duration, dest);
+    previewVoices.push(handle);
+  }
+
+  const totalSeconds = clipLengthSeconds(clip.bpm, clip.lengthBeats);
+  previewTimeoutId = setTimeout(() => {
+    previewVoices = [];
+    previewTimeoutId = null;
+    onFinish();
+  }, totalSeconds * 1000 + 100);
+
+  return true;
+}
+
+/** Audition a single note briefly (for NoteGrid click-to-audition) */
+export function auditionNote(instrumentId: string, pitch: number, velocity: number = 100, duration: number = 0.2): void {
+  const ctx = getPreviewCtx();
+  const voice = previewRack.getVoice(instrumentId);
+  if (!voice) return;
+  voice.playNote(ctx, pitch, velocity, ctx.currentTime, duration, ctx.destination);
+}
 
 // ── Singleton transport ──
 
+const subscribedTransports = new WeakSet<Transport>();
 let transport: Transport | null = null;
 
 function getTransport(): Transport {
@@ -38,7 +101,11 @@ export interface PlaybackState {
   mixerSnapshot: MixerSnapshot | null;
   renderStatus: "idle" | "rendering" | "done" | "error";
   lastRenderResult: RenderResult | null;
+  renderError: string | null;
   errorMessage: string | null;
+
+  // Clip preview state
+  previewingClipId: string | null;
 
   // Playback actions
   playScene: (pack: SoundtrackPack, sceneId: string) => Promise<void>;
@@ -79,6 +146,10 @@ export interface PlaybackState {
   // Render actions
   renderScene: (pack: SoundtrackPack, options: RenderOptions) => Promise<void>;
 
+  // Clip preview actions
+  previewClip: (clip: Clip) => void;
+  stopPreview: () => void;
+
   dispose: () => void;
 }
 
@@ -101,9 +172,12 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
     });
   };
 
-  // Attach listener on first use
+  // Attach listener on first use (guarded against HMR double-subscribe)
   const t = getTransport();
-  t.on(() => syncFromTransport());
+  if (!subscribedTransports.has(t)) {
+    t.on(() => syncFromTransport());
+    subscribedTransports.add(t);
+  }
 
   return {
     transportState: "stopped",
@@ -124,24 +198,47 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
     mixerSnapshot: null,
     renderStatus: "idle",
     lastRenderResult: null,
+    renderError: null,
     errorMessage: null,
+    previewingClipId: null,
 
     playScene: async (pack, sceneId) => {
-      const t = getTransport();
-      await t.playScene(pack, sceneId);
-      syncFromTransport();
+      set({ errorMessage: null });
+      try {
+        const t = getTransport();
+        await t.playScene(pack, sceneId);
+        syncFromTransport();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to play scene";
+        console.error("[Playback] playScene error:", err);
+        set({ errorMessage: `Could not play scene "${sceneId}": ${msg}` });
+      }
     },
 
     switchScene: async (pack, sceneId, options) => {
-      const t = getTransport();
-      await t.switchScene(pack, sceneId, options);
-      syncFromTransport();
+      set({ errorMessage: null });
+      try {
+        const t = getTransport();
+        await t.switchScene(pack, sceneId, options);
+        syncFromTransport();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to switch scene";
+        console.error("[Playback] switchScene error:", err);
+        set({ errorMessage: `Could not switch to scene "${sceneId}": ${msg}` });
+      }
     },
 
     playSequence: async (pack, states, stepDurationMs) => {
-      const t = getTransport();
-      await t.playSequence(pack, states, stepDurationMs);
-      syncFromTransport();
+      set({ errorMessage: null });
+      try {
+        const t = getTransport();
+        await t.playSequence(pack, states, stepDurationMs);
+        syncFromTransport();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to play sequence";
+        console.error("[Playback] playSequence error:", err);
+        set({ errorMessage: `Sequence playback failed: ${msg}` });
+      }
     },
 
     stop: () => {
@@ -226,26 +323,42 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
     // Render actions
     renderScene: async (pack, options) => {
       const t = getTransport();
-      set({ renderStatus: "rendering", lastRenderResult: null });
+      set({ renderStatus: "rendering", lastRenderResult: null, renderError: null });
       try {
         const result = await t.renderScene(pack, options);
         set({ renderStatus: "done", lastRenderResult: result });
-      } catch {
-        set({ renderStatus: "error", lastRenderResult: null });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unknown render failure";
+        console.error("[Playback] renderScene error:", err);
+        set({ renderStatus: "error", lastRenderResult: null, renderError: msg });
       }
     },
 
     // Cue playback actions
     playCue: async (pack, cue, startSection) => {
-      const t = getTransport();
-      await t.playCue(pack, cue, startSection);
-      syncFromTransport();
+      set({ errorMessage: null });
+      try {
+        const t = getTransport();
+        await t.playCue(pack, cue, startSection);
+        syncFromTransport();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to play cue";
+        console.error("[Playback] playCue error:", err);
+        set({ errorMessage: `Could not play cue "${cue.name}": ${msg}` });
+      }
     },
 
     jumpToSection: async (pack, cue, sectionIndex) => {
-      const t = getTransport();
-      await t.jumpToSection(pack, cue, sectionIndex);
-      syncFromTransport();
+      set({ errorMessage: null });
+      try {
+        const t = getTransport();
+        await t.jumpToSection(pack, cue, sectionIndex);
+        syncFromTransport();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to jump to section";
+        console.error("[Playback] jumpToSection error:", err);
+        set({ errorMessage: `Could not jump to section ${sectionIndex + 1}: ${msg}` });
+      }
     },
 
     setLoopSection: (sectionIndex) => {
@@ -272,7 +385,30 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
       return capture;
     },
 
+    // Clip preview actions
+    previewClip: (clip: Clip) => {
+      const state = usePlaybackStore.getState();
+      if (state.previewingClipId === clip.id) {
+        // Toggle off
+        stopPreviewInternal();
+        set({ previewingClipId: null });
+        return;
+      }
+      const ok = previewClipInternal(clip, () => {
+        set({ previewingClipId: null });
+      });
+      if (ok) {
+        set({ previewingClipId: clip.id });
+      }
+    },
+
+    stopPreview: () => {
+      stopPreviewInternal();
+      set({ previewingClipId: null });
+    },
+
     dispose: () => {
+      stopPreviewInternal();
       const t = getTransport();
       t.dispose();
       transport = null;
@@ -295,7 +431,9 @@ export const usePlaybackStore = create<PlaybackState>((set) => {
         mixerSnapshot: null,
         renderStatus: "idle",
         lastRenderResult: null,
+        renderError: null,
         errorMessage: null,
+        previewingClipId: null,
       });
     },
   };

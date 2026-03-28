@@ -288,6 +288,21 @@ describe("traceLineage", () => {
   it("returns empty for root entity", () => {
     expect(traceLineage("e1", [], [])).toEqual([]);
   });
+
+  it("terminates on cyclic lineage without infinite loop", () => {
+    const snapshots: Snapshot[] = [
+      { id: "s1", label: "V1", entityId: "e1", entityKind: "scene", data: {}, createdAt: "2024-01-01" },
+      { id: "s2", label: "V2", entityId: "e2", entityKind: "scene", data: {}, createdAt: "2024-01-02" },
+    ];
+    // e1 → e2 → e1 (cycle)
+    const branches: Branch[] = [
+      { id: "b1", name: "Fork1", sourceSnapshotId: "s1", entityId: "e2", entityKind: "scene", createdAt: "2024-01-01" },
+      { id: "b2", name: "Fork2", sourceSnapshotId: "s2", entityId: "e1", entityKind: "scene", createdAt: "2024-01-02" },
+    ];
+    // Should terminate (the visited set prevents infinite loops)
+    const chain = traceLineage("e2", branches, snapshots);
+    expect(chain.length).toBeLessThanOrEqual(2);
+  });
 });
 
 describe("descendantBranches", () => {

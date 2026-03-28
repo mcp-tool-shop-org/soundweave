@@ -17,9 +17,20 @@ import { dbToGain } from "./scene-player.js";
 
 const ALL_BUSES: BusId[] = ["drums", "music", "master"];
 
+/** Maximum FX slots per stem to prevent CPU overload */
+const MAX_STEM_FX_SLOTS = 4;
+
+/** Per-stem FX insert chain */
+interface StemFxInsert {
+  fxChain: FxNodeSet[];
+  fxSlotStates: FxSlotState[];
+}
+
 /** Per-stem routing state inside the mixer */
 interface StemRoute {
   stemId: string;
+  /** The stem's gain node (owned by ScenePlayer, connected into our chain) */
+  stemGainNode: GainNode;
   panNode: StereoPannerNode;
   bus: BusId;
   panValue: number;
@@ -40,6 +51,7 @@ export class Mixer {
   private ctx: BaseAudioContext;
   private buses = new Map<BusId, BusRoute>();
   private stemRoutes = new Map<string, StemRoute>();
+  private stemFxSlots = new Map<string, StemFxInsert>();
   private masterGain: GainNode;
   private masterGainDb = 0;
 
@@ -82,7 +94,7 @@ export class Mixer {
     return this.masterGain;
   }
 
-  /** Connect a stem's gain node through pan + bus routing. Returns the pan node. */
+  /** Connect a stem's gain node through [stem FX inserts] → pan → bus routing. Returns the pan node. */
   connectStem(
     stemId: string,
     stemGainNode: GainNode,
@@ -95,24 +107,39 @@ export class Mixer {
     const panNode = this.ctx.createStereoPanner();
     panNode.pan.value = panValue;
 
-    stemGainNode.connect(panNode);
+    // Build chain: stemGain → [stem FX inserts] → panNode → bus
+    this.rebuildStemFxChain(stemId, stemGainNode, panNode);
+
     const busRoute = this.buses.get(bus) ?? this.buses.get("music")!;
     panNode.connect(busRoute.inputGain);
 
-    this.stemRoutes.set(stemId, { stemId, panNode, bus, panValue });
+    this.stemRoutes.set(stemId, { stemId, stemGainNode, panNode, bus, panValue });
     return panNode;
   }
 
-  /** Disconnect a stem from the mixer */
+  /** Disconnect a stem from the mixer (preserves FX assignments for reconnection) */
   disconnectStem(stemId: string): void {
     const route = this.stemRoutes.get(stemId);
     if (!route) return;
+    try {
+      route.stemGainNode.disconnect();
+    } catch {
+      // Already disconnected
+    }
+    // Disconnect stem FX chain outputs
+    const insert = this.stemFxSlots.get(stemId);
+    if (insert) {
+      for (const fx of insert.fxChain) {
+        try { fx.output.disconnect(); } catch { /* ok */ }
+      }
+    }
     try {
       route.panNode.disconnect();
     } catch {
       // Already disconnected
     }
     this.stemRoutes.delete(stemId);
+    // NOTE: stemFxSlots are intentionally preserved so FX survive scene transitions
   }
 
   /** Disconnect all stems */
@@ -139,7 +166,7 @@ export class Mixer {
   setStemBus(stemId: string, bus: BusId): void {
     const route = this.stemRoutes.get(stemId);
     if (!route || route.bus === bus) return;
-    // Disconnect from old bus
+    // Disconnect pan from old bus
     try {
       route.panNode.disconnect();
     } catch {
@@ -226,17 +253,85 @@ export class Mixer {
     this.rebuildBusFxChain(bus);
   }
 
+  // ── Per-stem FX insert API ──
+
+  /** Add an FX insert to a stem (max 4 per stem) */
+  addStemFx(stemId: string, type: FxType, params?: FxParams): void {
+    let insert = this.stemFxSlots.get(stemId);
+    if (!insert) {
+      insert = { fxChain: [], fxSlotStates: [] };
+      this.stemFxSlots.set(stemId, insert);
+    }
+    if (insert.fxChain.length >= MAX_STEM_FX_SLOTS) return; // CPU guard
+
+    const resolvedParams = params ?? defaultParamsForFx(type);
+    const fxNodes = createFxNodes(this.ctx, type, resolvedParams);
+    insert.fxSlotStates.push({ type, params: resolvedParams, bypassed: false });
+    insert.fxChain.push(fxNodes);
+
+    // Rebuild if the stem is currently connected
+    const route = this.stemRoutes.get(stemId);
+    if (route) {
+      this.rebuildStemFxChain(stemId, route.stemGainNode, route.panNode);
+    }
+  }
+
+  /** Remove an FX insert from a stem by slot index */
+  removeStemFx(stemId: string, slotIndex: number): void {
+    const insert = this.stemFxSlots.get(stemId);
+    if (!insert || slotIndex < 0 || slotIndex >= insert.fxChain.length) return;
+
+    disposeFxNodes(insert.fxChain[slotIndex]);
+    insert.fxChain.splice(slotIndex, 1);
+    insert.fxSlotStates.splice(slotIndex, 1);
+
+    // Rebuild if the stem is currently connected
+    const route = this.stemRoutes.get(stemId);
+    if (route) {
+      this.rebuildStemFxChain(stemId, route.stemGainNode, route.panNode);
+    }
+  }
+
+  /** Update FX parameters for a stem FX slot */
+  updateStemFx(stemId: string, slotIndex: number, params: FxParams): void {
+    const insert = this.stemFxSlots.get(stemId);
+    if (!insert || slotIndex < 0 || slotIndex >= insert.fxChain.length) return;
+
+    insert.fxSlotStates[slotIndex].params = params;
+    insert.fxChain[slotIndex].update(params);
+  }
+
+  /** Get per-stem FX slot states */
+  getStemFxSlots(stemId: string): readonly FxSlotState[] {
+    return this.stemFxSlots.get(stemId)?.fxSlotStates ?? [];
+  }
+
+  /** Remove all FX assignments for stems that no longer exist */
+  pruneOrphanedStemFx(activeStemIds: Set<string>): void {
+    for (const stemId of [...this.stemFxSlots.keys()]) {
+      if (!activeStemIds.has(stemId)) {
+        const insert = this.stemFxSlots.get(stemId)!;
+        for (const fx of insert.fxChain) disposeFxNodes(fx);
+        this.stemFxSlots.delete(stemId);
+      }
+    }
+  }
+
   /** Get a snapshot of the current mixer state */
   getSnapshot(): MixerSnapshot {
+    // TODO: gainDb, muted, and solo live on ScenePlayer's StemHandle, not the mixer.
+    // getSnapshot() returns defaults (gainDb: 0, muted: false, solo: false) for all stems.
+    // To provide accurate values, the mixer would need a reference to the scene player's handles.
     const stems: StemMixState[] = [];
     for (const route of this.stemRoutes.values()) {
       stems.push({
         stemId: route.stemId,
-        gainDb: 0, // Actual gain is on the stem handle, not the mixer
+        gainDb: 0,
         pan: route.panValue,
         muted: false,
         solo: false,
         bus: route.bus,
+        fxSlots: [...(this.stemFxSlots.get(route.stemId)?.fxSlotStates ?? [])],
       });
     }
 
@@ -261,6 +356,11 @@ export class Mixer {
   /** Dispose all resources */
   dispose(): void {
     this.disconnectAllStems();
+    // Clean up all stem FX
+    for (const insert of this.stemFxSlots.values()) {
+      for (const fx of insert.fxChain) disposeFxNodes(fx);
+    }
+    this.stemFxSlots.clear();
     for (const bus of this.buses.values()) {
       for (const fx of bus.fxChain) {
         disposeFxNodes(fx);
@@ -278,6 +378,42 @@ export class Mixer {
       // ok
     }
     this.buses.clear();
+  }
+
+  /** Rebuild stem FX insert chain: stemGainNode → [active FX] → panNode */
+  private rebuildStemFxChain(
+    stemId: string,
+    stemGainNode: GainNode,
+    panNode: StereoPannerNode,
+  ): void {
+    // Disconnect stemGainNode from everything
+    try {
+      stemGainNode.disconnect();
+    } catch {
+      // ok
+    }
+
+    const insert = this.stemFxSlots.get(stemId);
+    if (!insert || insert.fxChain.length === 0) {
+      // No FX — direct connection
+      stemGainNode.connect(panNode);
+      return;
+    }
+
+    // Disconnect existing FX outputs
+    for (const fx of insert.fxChain) {
+      try { fx.output.disconnect(); } catch { /* ok */ }
+    }
+
+    // Build chain: stemGainNode → [active FX in sequence] → panNode
+    let current: AudioNode = stemGainNode;
+    for (let i = 0; i < insert.fxChain.length; i++) {
+      if (insert.fxSlotStates[i].bypassed) continue;
+      const fx = insert.fxChain[i];
+      current.connect(fx.input);
+      current = fx.output;
+    }
+    current.connect(panNode);
   }
 
   /** Rebuild the FX chain for a bus (disconnect and reconnect) */

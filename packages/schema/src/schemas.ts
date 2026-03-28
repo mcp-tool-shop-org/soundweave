@@ -183,6 +183,140 @@ export const TransitionRuleSchema = z
     },
   );
 
+// ── Instruments ──
+
+export const InstrumentCategorySchema = z.enum([
+  "drums",
+  "bass",
+  "pad",
+  "lead",
+  "pulse",
+]);
+
+export const InstrumentPresetSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  category: InstrumentCategorySchema,
+  params: z.record(z.string(), z.union([z.number(), z.string(), z.boolean()])),
+});
+
+// ── Clips ──
+
+export const ClipLaneSchema = z.enum(["drums", "bass", "harmony", "motif", "accent"]);
+export const SectionRoleSchema = z.enum(["intro", "loop", "outro"]);
+export const IntensityLevelSchema = z.enum(["low", "mid", "high"]);
+export const QuantizeModeSchema = z.enum(["none", "beat", "bar"]);
+
+export const ClipNoteSchema = z.object({
+  pitch: z.number().int().gte(0).lte(127),
+  startTick: z.number().int().gte(0),
+  durationTicks: z.number().int().positive(),
+  velocity: z.number().int().gte(0).lte(127),
+});
+
+export const ClipVariantSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  notes: z.array(ClipNoteSchema),
+  tags: z.array(z.string()).optional(),
+});
+
+export const ClipSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  lane: ClipLaneSchema,
+  instrumentId: z.string().min(1),
+  bpm: z.number().positive(),
+  lengthBeats: z.number().positive(),
+  timeSignature: z.number().int().positive().optional(),
+  quantize: z.number().int().positive().optional(),
+  keyRoot: z.number().int().gte(0).lte(11).optional(),
+  keyScale: z.string().optional(),
+  notes: z.array(ClipNoteSchema),
+  variants: z.array(ClipVariantSchema).optional(),
+  loop: z.boolean(),
+  gainDb: z.number().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const SceneClipRefSchema = z.object({
+  clipId: z.string().min(1),
+  gainDb: z.number().optional(),
+  mutedByDefault: z.boolean().optional(),
+  order: z.number().int().optional(),
+  sectionRole: SectionRoleSchema.optional(),
+  intensity: IntensityLevelSchema.optional(),
+  variantId: z.string().optional(),
+});
+
+// ── Cue structures ──
+
+export const CueSectionRoleSchema = z.enum([
+  "intro",
+  "body",
+  "escalation",
+  "climax",
+  "outro",
+  "transition",
+]);
+
+export const CueSectionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  role: CueSectionRoleSchema,
+  durationBars: z.number().int().positive(),
+  sceneId: z.string().optional(),
+  clipIds: z.array(z.string()).optional(),
+  intensity: IntensityLevelSchema.optional(),
+  transitionMode: TransitionModeSchema.optional(),
+  variantIds: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+});
+
+export const CueSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  bpm: z.number().positive().optional(),
+  keyRoot: z.number().int().gte(0).lte(11).optional(),
+  keyScale: z.string().optional(),
+  beatsPerBar: z.number().int().positive().optional(),
+  sections: z.array(CueSectionSchema).min(1),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+});
+
+// ── Performance capture ──
+
+export const CaptureActionTypeSchema = z.enum([
+  "scene-launch",
+  "clip-launch",
+  "intensity-change",
+  "section-advance",
+  "stop",
+]);
+
+export const PerformanceCaptureEventSchema = z.object({
+  tick: z.number().int().gte(0),
+  bar: z.number().int().gte(0),
+  beat: z.number().int().gte(0),
+  action: CaptureActionTypeSchema,
+  sceneId: z.string().optional(),
+  clipId: z.string().optional(),
+  intensity: IntensityLevelSchema.optional(),
+  quantize: QuantizeModeSchema.optional(),
+});
+
+export const PerformanceCaptureSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  cueId: z.string().optional(),
+  bpm: z.number().positive(),
+  beatsPerBar: z.number().int().positive(),
+  totalBars: z.number().int().positive(),
+  events: z.array(PerformanceCaptureEventSchema),
+  createdAt: z.string().min(1),
+});
+
 // ── Pack ──
 
 export const SampleSliceSchema = z
@@ -510,6 +644,9 @@ export const SoundtrackPackSchema = z.object({
   scenes: z.array(SceneSchema),
   bindings: z.array(TriggerBindingSchema),
   transitions: z.array(TransitionRuleSchema),
+  instruments: z.array(InstrumentPresetSchema).optional(),
+  clips: z.array(ClipSchema).optional(),
+  cues: z.array(CueSchema).optional(),
   sampleSlices: z.array(SampleSliceSchema).optional(),
   sampleKits: z.array(SampleKitSchema).optional(),
   sampleInstruments: z.array(SampleInstrumentSchema).optional(),
@@ -522,6 +659,7 @@ export const SoundtrackPackSchema = z.object({
   macroMappings: z.array(MacroMappingSchema).optional(),
   sectionEnvelopes: z.array(SectionEnvelopeSchema).optional(),
   automationCaptures: z.array(AutomationCaptureSchema).optional(),
+  performanceCaptures: z.array(PerformanceCaptureSchema).optional(),
   templates: z.array(LibraryTemplateSchema).optional(),
   snapshots: z.array(SnapshotSchema).optional(),
   branches: z.array(BranchSchema).optional(),

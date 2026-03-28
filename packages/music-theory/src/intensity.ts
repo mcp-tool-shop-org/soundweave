@@ -54,10 +54,11 @@ export function highIntensity(notes: readonly NoteEvent[], opts?: IntensityOptio
   result = addGhostHits(result, 40, Math.round(ticks16 / 2));
 
   // Snap to key if provided
-  if (opts?.key) {
+  const key = opts?.key;
+  if (key) {
     result = result.map((n) => ({
       ...n,
-      pitch: snapToScale(n.pitch, opts.key!),
+      pitch: snapToScale(n.pitch, key),
     }));
   }
 

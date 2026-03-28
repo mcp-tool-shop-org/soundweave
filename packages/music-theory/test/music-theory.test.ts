@@ -25,7 +25,7 @@ import {
   progressionFromDegrees,
   // motif
   transpose,
-  transposInKey,
+  transposeInKey,
   invert,
   reverse,
   octaveShift,
@@ -269,8 +269,8 @@ describe("Motif transforms", () => {
     expect(result[0].pitch).toBeLessThanOrEqual(127);
   });
 
-  it("transposInKey shifts by scale degrees", () => {
-    const result = transposInKey(SIMPLE_MOTIF, 2, C_MAJOR);
+  it("transposeInKey shifts by scale degrees", () => {
+    const result = transposeInKey(SIMPLE_MOTIF, 2, C_MAJOR);
     // C→E, E→G, G→B
     expect(result[0].pitch).toBe(64); // E4
     expect(result[1].pitch).toBe(67); // G4

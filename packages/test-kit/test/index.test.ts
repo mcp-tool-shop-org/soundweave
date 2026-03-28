@@ -16,4 +16,8 @@ describe("@soundweave/test-kit", () => {
     const p = fixturePath(FIXTURES.MINIMAL_PACK);
     expect(p).toContain("minimal-pack.json");
   });
+
+  it("throws when loading a nonexistent fixture", () => {
+    expect(() => loadFixture("nonexistent.json")).toThrow();
+  });
 });

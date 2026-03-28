@@ -15,6 +15,10 @@ export {
   DEFAULT_DELAY_PARAMS,
   DEFAULT_REVERB_PARAMS,
   DEFAULT_COMPRESSOR_PARAMS,
+  DEFAULT_CHORUS_PARAMS,
+  DEFAULT_DISTORTION_PARAMS,
+  DEFAULT_PHASER_PARAMS,
+  DEFAULT_LIMITER_PARAMS,
 } from "./mixer-types.js";
 export type {
   FxType,
@@ -23,6 +27,11 @@ export type {
   DelayParams,
   ReverbParams,
   CompressorParams,
+  ChorusParams,
+  DistortionParams,
+  DistortionCurve,
+  PhaserParams,
+  LimiterParams,
   FxSlotState,
   BusId,
   StemMixState,
@@ -31,6 +40,8 @@ export type {
   RenderPreset,
   RenderOptions,
   RenderResult,
+  WavBitDepth,
+  WavSampleRate,
 } from "./mixer-types.js";
 export type {
   LoadState,

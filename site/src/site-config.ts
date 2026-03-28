@@ -29,9 +29,9 @@ export const config: SiteConfig = {
       title: 'What It Can Do',
       subtitle: 'A serious creative instrument for adaptive game score authoring.',
       features: [
-        { title: 'Compose', desc: 'Clips with notes, instruments, scales, chords, motif transforms, and intensity variants — structured music authoring, not random generation.' },
+        { title: 'Compose', desc: 'Clips with notes, multi-oscillator synth (unison/supersaw), sample instruments, LFO modulation, and intensity variants — structured music authoring, not random generation.' },
         { title: 'Score Worlds', desc: 'Motif families, score profiles, cue families, world map entries, and derivation chains for game-wide musical coherence.' },
-        { title: 'Automate', desc: 'Lanes, macros, envelopes, and live capture — expressive parameter automation with real-time recording and merge.' },
+        { title: 'Mix and Effect', desc: '8 effect types (EQ, delay, reverb, compressor, chorus, distortion, phaser, limiter) with 4 insert FX slots per stem. MIDI import/export. 24/32-bit WAV rendering.' },
       ],
     },
     {
@@ -41,7 +41,7 @@ export const config: SiteConfig = {
       subtitle: 'Author in Studio, export for your game engine.',
       features: [
         { title: 'Adaptive Logic', desc: 'Trigger bindings, transitions, and deterministic scene resolution — music responds to game state predictably.' },
-        { title: '299+ Tests', desc: 'Schema validation, integrity auditing, sample operations, world scoring, automation, library management — all tested.' },
+        { title: '1,002 Tests', desc: 'Schema validation, synthesis, effects, MIDI, sample operations, world scoring, automation, library management — all tested.' },
         { title: 'Zero Network', desc: 'Runs entirely in the browser. No server, no cloud sync, no telemetry. Your music stays local.' },
       ],
     },
@@ -64,9 +64,9 @@ export const config: SiteConfig = {
         ['@soundweave/asset-index', 'Pack integrity indexing and auditing'],
         ['@soundweave/audio-engine', 'Sample playback and voice management'],
         ['@soundweave/clip-engine', 'Clip sequencing, transforms, cue scheduling'],
-        ['@soundweave/instrument-rack', 'Synth and drum voice management'],
+        ['@soundweave/instrument-rack', 'Multi-oscillator synth, drum voice, sample voice, LFO modulation'],
         ['@soundweave/music-theory', 'Scales, chords, motifs, intensity'],
-        ['@soundweave/playback-engine', 'Real-time playback, mixing, effects'],
+        ['@soundweave/playback-engine', 'Real-time playback, mixing, 8 FX types, MIDI I/O, WAV export'],
         ['@soundweave/sample-lab', 'Trim, slice, kit, instrument helpers'],
         ['@soundweave/score-map', 'Motifs, profiles, cue families, derivation'],
         ['@soundweave/automation', 'Lanes, macros, envelopes, capture'],

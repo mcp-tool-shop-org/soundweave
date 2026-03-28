@@ -76,6 +76,7 @@ export function SidebarNav() {
                 key={item.section}
                 className={`nav-item ${section === item.section ? "active" : ""}`}
                 onClick={() => setSection(item.section)}
+                style={section === item.section ? { borderLeft: "3px solid #4a9eff" } : undefined}
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}

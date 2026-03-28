@@ -73,7 +73,7 @@ export function ScenesScreen() {
             <div className="entity-list-items">
               {scenes.length === 0 && (
                 <div className="empty-state">
-                  <p>No scenes yet</p>
+                  <p>No scenes yet. Add your first scene to start building your soundtrack.</p>
                   <button className="btn btn-primary" onClick={handleAdd}>
                     Add first scene
                   </button>
@@ -119,9 +119,8 @@ export function ScenesScreen() {
                     <input
                       className="field-input"
                       value={selected.id}
-                      onChange={(e) =>
-                        updateScene(selected.id, { id: e.target.value })
-                      }
+                      readOnly
+                      style={{ background: "#2a2a2a", cursor: "default" }}
                     />
                   </div>
                   <div className="field-group">

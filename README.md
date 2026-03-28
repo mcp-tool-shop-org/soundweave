@@ -27,14 +27,20 @@ A DAW. A toy sequencer. An AI music generator. A world-building database with so
 ## What It Can Do
 
 - **Compose** — Clips with notes, instruments, scales, chords, motif transforms, intensity variants
-- **Arrange** — Scenes with layered stems, section roles, intensity curves
+- **Synthesize** — Multi-oscillator synth voices with unison/supersaw (16 presets), LFO modulation (filter, amplitude, pitch)
+- **Sample instruments** — Piano, strings, guitar templates via SampleVoice; import, trim, slice, kit builder
+- **Arrange** — Scenes with layered stems, section roles, intensity curves; 10 drum pattern presets
+- **Mix and effect** — 8 effect types (EQ, delay, reverb, compressor, chorus, distortion, phaser, limiter); 4 insert FX slots per stem
 - **Score a world** — Motif families, score profiles, cue families, world map entries, derivation
 - **Automate** — Lanes, macros, envelopes, live capture and merge
 - **Recall and reuse** — Templates, snapshots, branches, favorites, collections, compare
-- **Sample workflow** — Import, trim, slice, kit builder, sample instruments
+- **MIDI** — Import/export Standard MIDI Files
 - **Adaptive logic** — Trigger bindings, transitions, deterministic scene resolution
+- **Perform** — Real-time clip preview, click-to-audition, metronome with AudioContext-scheduled clicks
 - **Validate** — Schema validation, integrity auditing, cross-reference checks
-- **Export** — Runtime packs for game engine consumption
+- **Export** — 24/32-bit WAV at 44.1/48/96kHz; runtime packs for game engine consumption
+- **Author** — Undo/redo (50-deep, Ctrl+Z), project save/load with autosave, keyboard shortcuts (Space=play, ?=help), global BPM and time signature
+- **Reliability** — Error boundary with graceful recovery, AudioContext lookahead scheduling for sample-accurate timing
 
 ## Monorepo Structure
 
@@ -51,7 +57,7 @@ A DAW. A toy sequencer. An AI music generator. A world-building database with so
 |---------|-------------|
 | [`@soundweave/schema`](packages/schema) | Canonical types, Zod schemas, parse/validate |
 | [`@soundweave/asset-index`](packages/asset-index) | Pack integrity indexing and auditing |
-| [`@soundweave/audio-engine`](packages/audio-engine) | Sample playback and voice management |
+| [`@soundweave/audio-engine`](packages/audio-engine) | Sample playback, voice management, AudioContext scheduling |
 | [`@soundweave/test-kit`](packages/test-kit) | Fixtures and test utilities |
 
 ### Composition and Playback
@@ -59,9 +65,9 @@ A DAW. A toy sequencer. An AI music generator. A world-building database with so
 | Package | Description |
 |---------|-------------|
 | [`@soundweave/clip-engine`](packages/clip-engine) | Clip sequencing, transforms, cue scheduling |
-| [`@soundweave/instrument-rack`](packages/instrument-rack) | Synth and drum voice management with presets |
+| [`@soundweave/instrument-rack`](packages/instrument-rack) | Multi-oscillator synth, drum voice, sample voice, LFO modulation, 16 presets |
 | [`@soundweave/music-theory`](packages/music-theory) | Scales, chords, motifs, intensity transforms |
-| [`@soundweave/playback-engine`](packages/playback-engine) | Real-time playback, mixing, effects, rendering |
+| [`@soundweave/playback-engine`](packages/playback-engine) | Real-time playback, mixing, 8 effect types, MIDI I/O, WAV export (24/32-bit) |
 | [`@soundweave/sample-lab`](packages/sample-lab) | Trim, slice, kit, instrument helpers |
 | [`@soundweave/score-map`](packages/score-map) | Motifs, profiles, cue families, derivation |
 | [`@soundweave/automation`](packages/automation) | Lanes, macros, envelopes, capture |
@@ -89,7 +95,7 @@ All packages are published to npm under the `@soundweave` scope.
 ```bash
 pnpm install
 pnpm build
-pnpm test       # 663 tests across all packages
+pnpm test       # 1,002 tests across all packages
 pnpm dev        # Start Studio dev server
 ```
 
@@ -97,7 +103,7 @@ pnpm dev        # Start Studio dev server
 
 ## Testing
 
-All 16 packages have unit tests covering schema validation, integrity auditing, sample operations, world scoring, automation, library management, playback, and studio integration. 663 tests across 26 test files.
+All 16 packages have unit tests covering schema validation, integrity auditing, sample operations, world scoring, automation, library management, playback, synthesis, effects, MIDI, and studio integration. 1,002 tests across all packages.
 
 Run everything: `pnpm test`
 

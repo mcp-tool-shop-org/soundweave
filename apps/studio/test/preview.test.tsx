@@ -35,7 +35,7 @@ afterEach(() => {
 
 function navigateToPreview() {
   render(<Studio />);
-  fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Preview/ }));
 }
 
 describe("Preview — rendering", () => {

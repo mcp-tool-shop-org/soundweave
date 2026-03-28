@@ -66,6 +66,24 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
       gain: 0.55,
     },
   },
+  {
+    id: "bass-deep",
+    name: "Deep Bass",
+    category: "bass",
+    params: {
+      oscillatorType: "sawtooth",
+      attack: 0.005,
+      decay: 0.2,
+      sustain: 0.7,
+      release: 0.2,
+      filterFreq: 500,
+      filterQ: 2,
+      filterType: "lowpass",
+      gain: 0.75,
+      subOscMix: 0.6,
+      subOscWaveform: "sine",
+    },
+  },
 
   // ── Pads ──
   {
@@ -81,8 +99,17 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
       filterFreq: 1200,
       filterQ: 0.5,
       filterType: "lowpass",
-      detune: 8,
       gain: 0.4,
+      osc2Waveform: "sawtooth",
+      osc2Detune: 12,
+      osc2Mix: 0.8,
+      unisonVoices: 4,
+      unisonSpread: 50,
+      // Slow filter LFO — the pad breathes open and closed
+      lfoRate: 0.3,
+      lfoDepth: 0.4,
+      lfoWaveform: "sine",
+      lfoTarget: "filter",
     },
   },
   {
@@ -118,6 +145,32 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
       gain: 0.45,
     },
   },
+  {
+    id: "pad-ambient",
+    name: "Ambient Texture",
+    category: "pad",
+    params: {
+      oscillatorType: "sine",
+      attack: 1.5,
+      decay: 0.8,
+      sustain: 0.6,
+      release: 3.0,
+      filterFreq: 1800,
+      filterQ: 0.3,
+      filterType: "lowpass",
+      gain: 0.35,
+      osc2Waveform: "triangle",
+      osc2Detune: 20,
+      osc2Mix: 0.7,
+      unisonVoices: 4,
+      unisonSpread: 80,
+      // Very slow filter LFO — atmospheric movement
+      lfoRate: 0.1,
+      lfoDepth: 0.6,
+      lfoWaveform: "sine",
+      lfoTarget: "filter",
+    },
+  },
 
   // ── Lead / Pluck ──
   {
@@ -141,7 +194,7 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
     name: "Bright Lead",
     category: "lead",
     params: {
-      oscillatorType: "sawtooth",
+      oscillatorType: "square",
       attack: 0.01,
       decay: 0.15,
       sustain: 0.7,
@@ -150,6 +203,9 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
       filterQ: 1,
       filterType: "lowpass",
       gain: 0.5,
+      osc2Waveform: "sawtooth",
+      osc2Detune: 7,
+      osc2Mix: 0.6,
     },
   },
   {
@@ -166,6 +222,45 @@ export const FACTORY_PRESETS: InstrumentPreset[] = [
       filterQ: 1.5,
       filterType: "lowpass",
       gain: 0.4,
+    },
+  },
+  {
+    id: "lead-supersaw",
+    name: "Supersaw",
+    category: "lead",
+    params: {
+      oscillatorType: "sawtooth",
+      attack: 0.05,
+      decay: 0.3,
+      sustain: 0.7,
+      release: 0.4,
+      filterFreq: 4000,
+      filterQ: 0.7,
+      filterType: "lowpass",
+      gain: 0.45,
+      unisonVoices: 7,
+      unisonSpread: 40,
+    },
+  },
+
+  // ── Keys ──
+  {
+    id: "keys-soft",
+    name: "Soft Keys",
+    category: "lead",
+    params: {
+      oscillatorType: "triangle",
+      attack: 0.08,
+      decay: 0.4,
+      sustain: 0.5,
+      release: 0.5,
+      filterFreq: 2000,
+      filterQ: 0.5,
+      filterType: "lowpass",
+      gain: 0.45,
+      osc2Waveform: "sine",
+      osc2Detune: 3,
+      osc2Mix: 0.5,
     },
   },
 
