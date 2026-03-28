@@ -109,8 +109,10 @@ export function scheduleAutosave(): void {
     const state = useStudioStore.getState();
     const project = createProjectFile(state.pack, state.globalBpm, state.timeSignature);
     try {
-      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(project));
-      state._markSaved();
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(project));
+        state._markSaved();
+      }
     } catch {
       // localStorage full or unavailable — silently skip
     }
@@ -126,6 +128,7 @@ export function clearAutosaveTimer(): void {
 
 export function loadAutosave(): ProjectFile | null {
   try {
+    if (typeof localStorage === "undefined") return null;
     const raw = localStorage.getItem(AUTOSAVE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
@@ -138,6 +141,7 @@ export function loadAutosave(): ProjectFile | null {
 
 export function clearAutosave(): void {
   try {
+    if (typeof localStorage === "undefined") return;
     localStorage.removeItem(AUTOSAVE_KEY);
   } catch {
     // ignore
