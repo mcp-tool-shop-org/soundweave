@@ -7,50 +7,57 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/search?q=%40soundweave"><img src="https://img.shields.io/npm/v/@soundweave/schema?label=npm&color=cb3837" alt="npm"></a>
   <a href="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/mcp-tool-shop-org/soundweave"><img src="https://codecov.io/gh/mcp-tool-shop-org/soundweave/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
   <a href="https://mcp-tool-shop-org.github.io/soundweave/"><img src="https://img.shields.io/badge/Landing_Page-live-blue" alt="Landing Page"></a>
 </p>
 
-Estudio de composición de música adaptable para crear, organizar, componer y exportar música interactiva para videojuegos.
+Estudio de composición de música adaptativa para crear, organizar, componer y exportar música interactiva para videojuegos.
 
 ## ¿Qué es?
 
-Soundweave es una estación de trabajo centrada en la composición, con capacidad de adaptación. Combina la creación musical estructurada (clips, indicaciones, escenas, capas, automatización) con una lógica adaptativa que responde al estado del juego en tiempo real. El resultado: música para videojuegos que parece intencional, no generada.
+Soundweave es una estación de trabajo centrada en la composición y adaptabilidad. Combina la creación musical estructurada (clips, indicaciones, escenas, capas, automatización) con una lógica adaptativa que responde al estado del juego en tiempo real. El resultado: música para videojuegos que suena intencional, no generada aleatoriamente.
 
 ## ¿Qué no es?
 
-Un DAW (Digital Audio Workstation). Un secuenciador básico. Un generador de música con inteligencia artificial. Una base de datos para la creación de mundos con sonido adjunto. Soundweave es una herramienta creativa seria para la composición de música adaptable para videojuegos.
+Un DAW (Digital Audio Workstation). Un secuenciador básico. Un generador de música con inteligencia artificial. Una base de datos de elementos para la creación de mundos con sonido adjunto. Soundweave es una herramienta creativa seria para la composición de música adaptativa para videojuegos.
 
 ## ¿Qué puede hacer?
 
 - **Componer:** Clips con notas, instrumentos, escalas, acordes, transformaciones de motivos, variaciones de intensidad.
-- **Organizar:** Escenas con capas, roles de sección, curvas de intensidad.
+- **Sintetizar:** Voces de sintetizador con múltiples osciladores y unisono/supersaw (16 presets), modulación LFO (filtro, amplitud, tono).
+- **Muestrear instrumentos:** Plantillas de piano, cuerdas, guitarra a través de SampleVoice; importar, recortar, dividir, creación de kits.
+- **Organizar:** Escenas con capas, roles de sección, curvas de intensidad; 10 presets de patrones de batería.
+- **Mezclar y aplicar efectos:** 8 tipos de efectos (ecualizador, delay, reverb, compresor, chorus, distorsión, phaser, limitador); 4 ranuras de efectos insertables por capa.
 - **Crear un mundo:** Familias de motivos, perfiles de composición, familias de indicaciones, entradas de mapa del mundo, derivación.
-- **Automatizar:** Pistas, macros, envolventes, captura y combinación en tiempo real.
+- **Automatizar:** Pistas, macros, envolventes, captura en vivo y combinación.
 - **Recordar y reutilizar:** Plantillas, instantáneas, ramas, favoritos, colecciones, comparación.
-- **Flujo de trabajo con muestras:** Importación, recorte, segmentación, creación de kits, instrumentos de muestra.
+- **MIDI:** Importar/exportar archivos MIDI estándar.
 - **Lógica adaptativa:** Enlaces de activación, transiciones, resolución de escenas determinista.
-- **Validar:** Validación de esquemas, auditoría de integridad, comprobaciones de referencias cruzadas.
-- **Exportar:** Paquetes de tiempo de ejecución para su uso en motores de juego.
+- **Reproducir:** Previsualización de clips en tiempo real, prueba con un solo clic, metrónomo con clics programados en AudioContext.
+- **Validar:** Validación de esquema, auditoría de integridad, comprobaciones de referencias cruzadas.
+- **Exportar:** WAV de 24/32 bits a 44.1/48/96 kHz; paquetes de tiempo de ejecución para su uso en motores de juego.
+- **Crear:** Deshacer/rehacer (hasta 50 niveles, Ctrl+Z), guardar/cargar proyectos con autoguardado, atajos de teclado (Espacio=reproducir, ?=ayuda), BPM y compás globales.
+- **Fiabilidad:** Manejo de errores con recuperación, programación anticipada de AudioContext para una sincronización precisa.
 
-## Estructura de Monorrepositorio
+## Estructura de Monorepo
 
 ### Aplicaciones
 
 | Aplicación | Descripción |
 |-----|-------------|
-| [`apps/studio`](apps/studio) | Interfaz de usuario principal de composición (Next.js 15, Zustand 5). |
+| [`apps/studio`](apps/studio) | Interfaz de usuario principal de creación (Next.js 15, Zustand 5). |
 | [`apps/docs`](apps/docs) | Sitio de documentación (Astro). |
 
 ### Paquetes principales
 
 | Paquete | Descripción |
 |---------|-------------|
-| [`@soundweave/schema`](packages/schema) | Tipos canónicos, esquemas Zod, análisis/validación. |
+| [`@soundweave/schema`](packages/schema) | Tipos canónicos, esquemas Zod, parse/validate. |
 | [`@soundweave/asset-index`](packages/asset-index) | Indexación y auditoría de la integridad de los paquetes. |
-| [`@soundweave/audio-engine`](packages/audio-engine) | Reproducción de muestras y gestión de voces. |
+| [`@soundweave/audio-engine`](packages/audio-engine) | Reproducción de muestras, gestión de voces, programación de AudioContext. |
 | [`@soundweave/test-kit`](packages/test-kit) | Herramientas de prueba y configuración. |
 
 ### Composición y reproducción
@@ -58,10 +65,10 @@ Un DAW (Digital Audio Workstation). Un secuenciador básico. Un generador de mú
 | Paquete | Descripción |
 |---------|-------------|
 | [`@soundweave/clip-engine`](packages/clip-engine) | Secuenciación de clips, transformaciones, programación de indicaciones. |
-| [`@soundweave/instrument-rack`](packages/instrument-rack) | Gestión de voces de sintetizador y batería con preajustes. |
+| [`@soundweave/instrument-rack`](packages/instrument-rack) | Sintetizador con múltiples osciladores, voz de batería, voz de muestra, modulación LFO, 16 presets. |
 | [`@soundweave/music-theory`](packages/music-theory) | Escalas, acordes, motivos, transformaciones de intensidad. |
-| [`@soundweave/playback-engine`](packages/playback-engine) | Reproducción en tiempo real, mezcla, efectos, renderizado. |
-| [`@soundweave/sample-lab`](packages/sample-lab) | Herramientas para recortar, segmentar, crear kits e instrumentos. |
+| [`@soundweave/playback-engine`](packages/playback-engine) | Reproducción en tiempo real, mezcla, 8 tipos de efectos, E/S MIDI, exportación WAV (24/32 bits). |
+| [`@soundweave/sample-lab`](packages/sample-lab) | Recortar, dividir, kit, herramientas de instrumentos. |
 | [`@soundweave/score-map`](packages/score-map) | Motivos, perfiles, familias de indicaciones, derivación. |
 | [`@soundweave/automation`](packages/automation) | Pistas, macros, envolventes, captura. |
 | [`@soundweave/library`](packages/library) | Plantillas, instantáneas, ramas, favoritos, comparación. |
@@ -75,12 +82,20 @@ Un DAW (Digital Audio Workstation). Un secuenciador básico. Un generador de mú
 | [`@soundweave/review`](packages/review) | Resúmenes y herramientas de auditoría. |
 | [`@soundweave/ui`](packages/ui) | Componentes de interfaz de usuario compartidos. |
 
-## Cómo empezar
+## Instalación
+
+```bash
+npm install @soundweave/schema @soundweave/clip-engine @soundweave/runtime-pack
+```
+
+Todos los paquetes se publican en npm bajo el alcance `@soundweave`.
+
+## Inicio rápido (monorepo)
 
 ```bash
 pnpm install
 pnpm build
-pnpm test       # 299+ tests across all packages
+pnpm test       # 1,002 tests across all packages
 pnpm dev        # Start Studio dev server
 ```
 
@@ -88,26 +103,34 @@ pnpm dev        # Start Studio dev server
 
 ## Pruebas
 
-Todos los paquetes tienen pruebas unitarias que cubren la validación de esquemas, la auditoría de integridad, las operaciones con muestras, la composición de mundos, la automatización, la gestión de bibliotecas y la integración con el estudio.
+Los 16 paquetes incluyen pruebas unitarias que cubren la validación del esquema, la auditoría de integridad, operaciones de ejemplo, la asignación de puntuaciones a los elementos del mundo, la automatización, la gestión de bibliotecas, la reproducción, la síntesis, los efectos, el MIDI y la integración con el estudio. Hay 1002 pruebas en total, distribuidas entre todos los paquetes.
 
-Para ejecutar todo: `pnpm test`
+Para ejecutar todas las pruebas: `pnpm test`
 
-## Manual
+## Manual de usuario
 
-El [manual](handbook/) es el manual de operación completo que cubre la visión general del producto, la arquitectura, el modelo de datos, el uso del estudio, los flujos de trabajo creativos y las prácticas de ingeniería (40 capítulos).
+El [manual de usuario](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/) es el manual de operación completo que cubre la definición del producto, la arquitectura, la navegación en el estudio, los flujos de trabajo creativos y la estrategia. Puntos de acceso clave:
+
+- [Producto: ¿Qué es SoundWeave?](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/)
+- [Arquitectura: Descripción general del repositorio](https://mcp-tool-shop-org.github.io/soundweave/handbook/architecture/)
+- [Flujo de trabajo: Creación de un elemento desde cero](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/building-a-cue/)
+- [Flujo de trabajo: Trabajo con muestras personalizadas](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/custom-samples/)
+- [Flujo de trabajo: Asignación de puntuaciones a los elementos del mundo](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/world-scoring/)
+- [Estrategia: Glosario](https://mcp-tool-shop-org.github.io/soundweave/handbook/strategy/glossary/)
+- [Paquetes de ejemplo](examples/)
 
 ## Seguridad y Confianza
 
-Soundweave se ejecuta **completamente en el navegador**. No hay servidor, no hay sincronización en la nube, no hay telemetría.
+Soundweave se ejecuta **completamente en el navegador**. No hay servidor, no hay sincronización en la nube, ni telemetría.
 
-- **Datos accedidos:** Archivos de paquete de banda sonora creados por el usuario (JSON), referencias de activos de audio, almacenamiento local del navegador.
-- **Datos NO accedidos:** No hay almacenamiento en el servidor, no hay acceso al sistema de archivos más allá de la caja de arena del navegador.
-- **Red:** Cero tráfico de red saliente: toda la composición y reproducción se realizan en el lado del cliente.
-- **Contraseñas:** No lee, almacena ni transmite credenciales.
-- **Telemetría:** No se recopila ni se envía nada.
+- **Datos accedidos:** Archivos de paquetes de banda sonora creados por el usuario (JSON), referencias a activos de audio, almacenamiento local del navegador.
+- **Datos NO accedidos:** No hay almacenamiento en el servidor, no hay acceso al sistema de archivos más allá del entorno de seguridad del navegador.
+- **Red:** No hay tráfico de red saliente; toda la creación y reproducción se realiza en el lado del cliente.
+- **Credenciales:** No lee, almacena ni transmite credenciales.
+- **Telemetría:** No se recopila ni se envía información.
 - **Permisos:** Solo se utilizan las API estándar del navegador (Web Audio API).
 
-Consulte el archivo [SECURITY.md](SECURITY.md) para informar sobre vulnerabilidades.
+Consulte [SECURITY.md](SECURITY.md) para informar sobre vulnerabilidades.
 
 ## Licencia
 
@@ -115,4 +138,4 @@ MIT
 
 ---
 
-Desarrollado por <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>.
+Desarrollado por <a href="https://mcp-tool-shop.github.io/">MCP Tool Shop</a>

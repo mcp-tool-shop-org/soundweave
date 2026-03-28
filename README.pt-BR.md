@@ -7,6 +7,7 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/search?q=%40soundweave"><img src="https://img.shields.io/npm/v/@soundweave/schema?label=npm&color=cb3837" alt="npm"></a>
   <a href="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml"><img src="https://github.com/mcp-tool-shop-org/soundweave/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/mcp-tool-shop-org/soundweave"><img src="https://codecov.io/gh/mcp-tool-shop-org/soundweave/branch/main/graph/badge.svg" alt="Coverage"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
@@ -25,15 +26,21 @@ Uma DAW (Digital Audio Workstation). Um sequenciador simples. Um gerador de mús
 
 ## O que ele pode fazer
 
-- **Compor** — Trechos com notas, instrumentos, escalas, acordes, transformações de motivos, variações de intensidade.
-- **Arranjar** — Cenas com camadas, funções de seções, curvas de intensidade.
-- **Criar a trilha sonora de um mundo** — Famílias de motivos, perfis de trilha sonora, famílias de pistas, entradas no mapa do mundo, derivação.
-- **Automatizar** — Canais, macros, envelopes, captura e mesclagem em tempo real.
-- **Reutilizar e salvar** — Modelos, instantâneos, ramificações, favoritos, coleções, comparação.
-- **Fluxo de trabalho com amostras** — Importar, cortar, dividir, criador de kits, instrumentos de amostra.
-- **Lógica adaptativa** — Associações de gatilhos, transições, resolução de cenas determinística.
+- **Compor** — Clipes com notas, instrumentos, escalas, acordes, transformações de motivos, variações de intensidade.
+- **Sintetizar** — Sons de sintetizador com múltiplos osciladores e unison/supersaw (16 predefinições), modulação LFO (filtro, amplitude, afinação).
+- **Amostras de instrumentos** — Modelos de piano, cordas, guitarra via SampleVoice; importar, cortar, dividir, construtor de kits.
+- **Organizar** — Cenas com camadas, funções de seções, curvas de intensidade; 10 predefinições de padrões de bateria.
+- **Mixar e aplicar efeitos** — 8 tipos de efeitos (EQ, delay, reverb, compressor, chorus, distorção, phaser, limiter); 4 slots de efeitos para cada camada.
+- **Criar um mundo** — Famílias de motivos, perfis de partitura, famílias de indicações, entradas no mapa do mundo, derivação.
+- **Automatizar** — Trilhas, macros, envelopes, captura e mesclagem em tempo real.
+- **Salvar e reutilizar** — Modelos, instantâneos, ramificações, favoritos, coleções, comparar.
+- **MIDI** — Importar/exportar arquivos MIDI padrão.
+- **Lógica adaptativa** — Associações de gatilhos, transições, resolução determinística de cenas.
+- **Executar** — Visualização de clipes em tempo real, pré-visualização com um clique, metrônomo com cliques agendados via AudioContext.
 - **Validar** — Validação de esquema, auditoria de integridade, verificações de referência cruzada.
-- **Exportar** — Pacotes de tempo de execução para uso em engines de jogos.
+- **Exportar** — WAV de 24/32 bits a 44.1/48/96kHz; pacotes de tempo de execução para uso em engines de jogos.
+- **Criar** — Desfazer/refazer (até 50 níveis, Ctrl+Z), salvar/carregar projeto com salvamento automático, atalhos de teclado (Espaço=reproduzir, ?=ajuda), BPM e compasso globais.
+- **Confiabilidade** — Limite de erros com recuperação suave, agendamento antecipado do AudioContext para sincronização precisa.
 
 ## Estrutura do Monorepository
 
@@ -50,7 +57,7 @@ Uma DAW (Digital Audio Workstation). Um sequenciador simples. Um gerador de mús
 |---------|-------------|
 | [`@soundweave/schema`](packages/schema) | Tipos canônicos, esquemas Zod, análise/validação. |
 | [`@soundweave/asset-index`](packages/asset-index) | Indexação e auditoria da integridade dos pacotes. |
-| [`@soundweave/audio-engine`](packages/audio-engine) | Reprodução de amostras e gerenciamento de vozes. |
+| [`@soundweave/audio-engine`](packages/audio-engine) | Reprodução de amostras, gerenciamento de vozes, agendamento do AudioContext. |
 | [`@soundweave/test-kit`](packages/test-kit) | Ferramentas de teste e utilitários. |
 
 ### Composição e Reprodução
@@ -58,9 +65,9 @@ Uma DAW (Digital Audio Workstation). Um sequenciador simples. Um gerador de mús
 | Pacote | Descrição |
 |---------|-------------|
 | [`@soundweave/clip-engine`](packages/clip-engine) | Sequenciamento de trechos, transformações, agendamento de pistas. |
-| [`@soundweave/instrument-rack`](packages/instrument-rack) | Gerenciamento de vozes de sintetizadores e bateria com presets. |
+| [`@soundweave/instrument-rack`](packages/instrument-rack) | Sintetizador com múltiplos osciladores, voz de bateria, voz de amostra, modulação LFO, 16 predefinições. |
 | [`@soundweave/music-theory`](packages/music-theory) | Escalas, acordes, motivos, transformações de intensidade. |
-| [`@soundweave/playback-engine`](packages/playback-engine) | Reprodução em tempo real, mixagem, efeitos, renderização. |
+| [`@soundweave/playback-engine`](packages/playback-engine) | Reprodução em tempo real, mixagem, 8 tipos de efeitos, E/S MIDI, exportação WAV (24/32 bits). |
 | [`@soundweave/sample-lab`](packages/sample-lab) | Ferramentas para cortar, dividir, criar kits e instrumentos. |
 | [`@soundweave/score-map`](packages/score-map) | Motivos, perfis, famílias de pistas, derivação. |
 | [`@soundweave/automation`](packages/automation) | Canais, macros, envelopes, captura. |
@@ -75,12 +82,20 @@ Uma DAW (Digital Audio Workstation). Um sequenciador simples. Um gerador de mús
 | [`@soundweave/review`](packages/review) | Resumos e utilitários de auditoria. |
 | [`@soundweave/ui`](packages/ui) | Componentes de interface de usuário compartilhados. |
 
-## Como começar
+## Instalar
+
+```bash
+npm install @soundweave/schema @soundweave/clip-engine @soundweave/runtime-pack
+```
+
+Todos os pacotes são publicados no npm sob o escopo `@soundweave`.
+
+## Início rápido (monorepo)
 
 ```bash
 pnpm install
 pnpm build
-pnpm test       # 299+ tests across all packages
+pnpm test       # 1,002 tests across all packages
 pnpm dev        # Start Studio dev server
 ```
 
@@ -88,13 +103,21 @@ pnpm dev        # Start Studio dev server
 
 ## Testes
 
-Todos os pacotes possuem testes unitários que cobrem a validação de esquema, auditoria de integridade, operações com amostras, criação de trilhas sonoras, automação, gerenciamento de bibliotecas e integração com o estúdio.
+Todos os 16 pacotes possuem testes unitários que cobrem a validação de esquema, auditoria de integridade, operações com amostras, criação de mundos, automação, gerenciamento de bibliotecas, reprodução, síntese, efeitos, MIDI e integração com o estúdio. 1.002 testes em todos os pacotes.
 
 Para executar todos os testes: `pnpm test`
 
 ## Manual
 
-O [manual](handbook/) é o manual de operação abrangente que cobre a visão geral do produto, a arquitetura, o modelo de dados, o uso do estúdio, os fluxos de trabalho criativos e as práticas de engenharia (40 capítulos).
+O [manual](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/) é o manual de operação abrangente que cobre a definição do produto, a arquitetura, a navegação no estúdio, os fluxos de trabalho criativos e a estratégia. Principais pontos de acesso:
+
+- [Produto: O que é o SoundWeave](https://mcp-tool-shop-org.github.io/soundweave/handbook/product/)
+- [Arquitetura: Visão geral do repositório](https://mcp-tool-shop-org.github.io/soundweave/handbook/architecture/)
+- [Fluxo de trabalho: Criando uma indicação do zero](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/building-a-cue/)
+- [Fluxo de trabalho: Trabalhando com amostras personalizadas](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/custom-samples/)
+- [Fluxo de trabalho: Criação de mundos](https://mcp-tool-shop-org.github.io/soundweave/handbook/workflows/world-scoring/)
+- [Estratégia: Glossário](https://mcp-tool-shop-org.github.io/soundweave/handbook/strategy/glossary/)
+- [Pacotes de exemplo](examples/)
 
 ## Segurança e Confiança
 
