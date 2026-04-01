@@ -23,10 +23,10 @@
     "@soundweave/scene-mapper": "workspace:*",
     "@soundweave/schema": "workspace:*",
     "@soundweave/ui": "workspace:*",
-    "next": "^15.5.14",
+    "next": "^16.2.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@soundweave/test-kit": "workspace:*",
